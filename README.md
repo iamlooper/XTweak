@@ -1,5 +1,5 @@
 # XTweak
-POWERFUL &amp; EFFECTIVENESS KERNEL TWEAKER
+POWERFUL &amp; FORCEFULNESS KERNEL TWEAKER
 # MODES
 # 1) Auto X 
 * Auto X is improved version of the Auto mode based on automatic profile. It will automatically change modes based on user behavior and conditions. For example: While you are gaming, Auto X mode will automatically change mode to potency for better gameplay.
