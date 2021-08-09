@@ -4,7 +4,7 @@
 # Author: Matt Yang
 # Version: 20210523
 
-BASEDIR="$(dirname "$0")"
+BASEDIR="/data/adb/modules/xtweak"
 . $BASEDIR/pathinfo.sh
 
 ###############################
@@ -12,8 +12,7 @@ BASEDIR="$(dirname "$0")"
 ###############################
 
 # $1:value $2:filepaths
-lock_val() 
-{
+lock_val(){
     for p in $2; do
         if [ -f "$p" ]; then
             chmod 0666 "$p" 2> /dev/null
@@ -24,8 +23,7 @@ lock_val()
 }
 
 # $1:value $2:filepaths
-mutate() 
-{
+mutate(){
     for p in $2; do
         if [ -f "$p" ]; then
             chmod 0666 "$p" 2> /dev/null
@@ -35,16 +33,14 @@ mutate()
 }
 
 # $1:file path
-lock() 
-{
+lock(){
     if [ -f "$1" ]; then
         chmod 0444 "$1" 2> /dev/null
     fi
 }
 
 # $1:value $2:list
-has_val_in_list()
-{
+has_val_in_list(){
     for item in $2; do
         if [ "$1" == "$item" ]; then
             echo "true"
@@ -59,8 +55,7 @@ has_val_in_list()
 ###############################
 
 # $1:key $return:value(string)
-read_cfg_value()
-{
+read_cfg_value(){
     local value=""
     if [ -f "$PANEL_FILE" ]; then
         value="$(grep -i "^$1=" "$PANEL_FILE" | head -n 1 | tr -d ' ' | cut -d= -f2)"
@@ -69,18 +64,15 @@ read_cfg_value()
 }
 
 # $1:content
-write_panel()
-{
+write_panel(){
     echo "$1" >> "$PANEL_FILE"
 }
 
-clear_panel()
-{
+clear_panel(){
     true > "$PANEL_FILE"
 }
 
-wait_until_login()
-{
+wait_until_login(){
     # in case of /data encryption is disabled
     while [ "$(getprop sys.boot_completed)" != "1" ]; do
         sleep 1
@@ -101,13 +93,11 @@ wait_until_login()
 ###############################
 
 # $1:content
-log()
-{
+log(){
     echo "$1" >> "$LOG_FILE"
 }
 
-clear_log()
-{
+clear_log(){
     true > "$LOG_FILE"
 }
 
@@ -116,25 +106,21 @@ clear_log()
 ###############################
 
 # $1:"4.14" return:string_in_version
-match_linux_version()
-{
+match_linux_version(){
     echo "$(cat /proc/version | grep -i "$1")"
 }
 
 # return:platform_name
-get_platform_name()
-{
+get_platform_name(){
     echo "$(getprop ro.board.platform)"
 }
 
 # return_nr_core
-get_nr_core()
-{
+get_nr_core(){
     echo "$(cat /proc/stat | grep cpu[0-9] | wc -l)"
 }
 
-is_aarch64()
-{
+is_aarch64(){
     if [ "$(getprop ro.product.cpu.abi)" == "arm64-v8a" ]; then
         echo "true"
     else
@@ -142,8 +128,7 @@ is_aarch64()
     fi
 }
 
-is_mtk()
-{
+is_mtk(){
     if [ "$(getprop | grep ro.mtk)" != "" ]; then
         echo "true"
     else
@@ -151,8 +136,7 @@ is_mtk()
     fi
 }
 
-is_magisk()
-{
+is_magisk(){
     if [ "$(echo $BASEDIR | grep "^\/data\/adb\/modules")" != "" ]; then
         echo "true"
     else
