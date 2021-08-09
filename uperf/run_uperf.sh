@@ -4,7 +4,7 @@
 # Author: Matt Yang
 # Version: 20200401
 
-BASEDIR="/data/adb/modules/uperf
+BASEDIR="/data/adb/modules/xtweak"
 SCRIPT_DIR="$BASEDIR/script"
 
 # support vtools
