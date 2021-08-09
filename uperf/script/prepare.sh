@@ -2,7 +2,7 @@
 # https://github.com/yc9559/
 # Author: Matt Yang
 
-BASEDIR="$(dirname "$0")"
+BASEDIR="/data/adb/modules/xtweak"
 . $BASEDIR/pathinfo.sh
 . $BASEDIR/libcommon.sh
 
