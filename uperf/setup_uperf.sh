@@ -1,23 +1,21 @@
-#!/vendor/bin/sh
+#!/system/bin/sh
 # Uperf Setup
 # https://github.com/yc9559/
 # Author: Matt Yang & cjybyjk (cjybyjk@gmail.com)
 # Version: 20201129
 
 BASEDIR="$(dirname $(readlink -f "$0"))"
-USER_PATH="/sdcard/yc/uperf"
+USER_PATH="/sdcard/xtweak/uperf"
 
 # $1:error_message
-_abort()
-{
+_abort(){
     echo "$1"
-    echo "! Uperf installation failed."
+    echo "[!] Uperf installation failed."
     exit 1
 }
 
 # $1:file_node $2:owner $3:group $4:permission $5:secontext
-_set_perm()
-{
+_set_perm(){
     local con
     chown $2:$3 $1
     chmod $4 $1
@@ -27,7 +25,7 @@ _set_perm()
 }
 
 # $1:directory $2:owner $3:group $4:dir_permission $5:file_permission $6:secontext
-_set_perm_recursive() {
+_set_perm_recursive(){
     find $1 -type d 2>/dev/null | while read dir; do
         _set_perm $dir $2 $3 $4 $6
     done
@@ -36,13 +34,11 @@ _set_perm_recursive() {
     done
 }
 
-_get_nr_core()
-{
+_get_nr_core(){
     echo "$(cat /proc/stat | grep cpu[0-9] | wc -l)"
 }
 
-_is_aarch64()
-{
+_is_aarch64(){
     if [ "$(getprop ro.product.cpu.abi)" == "arm64-v8a" ]; then
         echo "true"
     else
@@ -50,8 +46,7 @@ _is_aarch64()
     fi
 }
 
-_is_eas()
-{
+_is_eas(){
     if [ "$(grep sched /sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors)" != "" ]; then
         echo "true"
     else
@@ -60,8 +55,7 @@ _is_eas()
 }
 
 # $1:cpuid
-_get_maxfreq()
-{
+_get_maxfreq(){
     local fpath="/sys/devices/system/cpu/cpu$1/cpufreq/scaling_available_frequencies"
     local maxfreq="0"
 
@@ -76,8 +70,7 @@ _get_maxfreq()
     echo "$maxfreq"
 }
 
-_get_socid()
-{
+_get_socid(){
     if [ -f /sys/devices/soc0/soc_id ]; then
         echo "$(cat /sys/devices/soc0/soc_id)"
     else
@@ -85,8 +78,7 @@ _get_socid()
     fi
 }
 
-_get_sm6150_type()
-{
+_get_sm6150_type(){
     [ -f /sys/devices/soc0/soc_id ] && SOC_ID="$(cat /sys/devices/soc0/soc_id)"
     [ -f /sys/devices/system/soc/soc0/id ] && SOC_ID="$(cat /sys/devices/system/soc/soc0/id)"
     case "$SOC_ID" in
@@ -95,8 +87,7 @@ _get_sm6150_type()
     esac
 }
 
-_get_sdm76x_type()
-{
+_get_sdm76x_type(){
     if [ "$(_get_maxfreq 7)" -gt 2800000 ]; then
         echo "sdm768"
     elif [ "$(_get_maxfreq 7)" -gt 2300000 ]; then
@@ -106,8 +97,7 @@ _get_sdm76x_type()
     fi
 }
 
-_get_msm8916_type()
-{
+_get_msm8916_type(){
     case "$(_get_socid)" in
     "206"|"247"|"248"|"249"|"250") echo "msm8916" ;;
     "233"|"240"|"242") echo "sdm610" ;;
@@ -116,8 +106,7 @@ _get_msm8916_type()
     esac
 }
 
-_get_msm8952_type()
-{
+_get_msm8952_type(){
     case "$(_get_socid)" in
     "264"|"289")
         echo "msm8952"
@@ -132,8 +121,7 @@ _get_msm8952_type()
     esac
 }
 
-_get_sdm636_type()
-{
+_get_sdm636_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "sdm636_eas"
     else
@@ -141,8 +129,7 @@ _get_sdm636_type()
     fi
 }
 
-_get_sdm660_type()
-{
+_get_sdm660_type(){
     local b_max
     b_max="$(_get_maxfreq 4)"
     # sdm660 & sdm636 may share the same platform name
@@ -157,8 +144,7 @@ _get_sdm660_type()
     fi
 }
 
-_get_sdm652_type()
-{
+_get_sdm652_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "sdm652_eas"
     else
@@ -166,8 +152,7 @@ _get_sdm652_type()
     fi
 }
 
-_get_sdm650_type()
-{
+_get_sdm650_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "sdm650_eas"
     else
@@ -175,8 +160,7 @@ _get_sdm650_type()
     fi
 }
 
-_get_sdm626_type()
-{
+_get_sdm626_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "sdm626_eas"
     else
@@ -184,8 +168,7 @@ _get_sdm626_type()
     fi
 }
 
-_get_sdm625_type()
-{
+_get_sdm625_type(){
     local b_max
     b_max="$(_get_maxfreq 4)"
     # sdm625 & sdm626 may share the same platform name
@@ -200,8 +183,7 @@ _get_sdm625_type()
     fi
 }
 
-_get_sdm835_type()
-{
+_get_sdm835_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "sdm835_eas"
     else
@@ -209,8 +191,7 @@ _get_sdm835_type()
     fi
 }
 
-_get_sdm82x_type()
-{
+_get_sdm82x_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "sdm82x_eas"
         return
@@ -244,8 +225,7 @@ _get_sdm82x_type()
     fi
 }
 
-_get_e8890_type()
-{
+_get_e8890_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "e8890_eas"
     else
@@ -253,8 +233,7 @@ _get_e8890_type()
     fi
 }
 
-_get_e8895_type()
-{
+_get_e8895_type(){
     if [ "$(_is_eas)" == "true" ]; then
         echo "e8895_eas"
     else
@@ -262,8 +241,7 @@ _get_e8895_type()
     fi
 }
 
-_get_mt6853_type()
-{
+_get_mt6853_type(){
     local b_max
     b_max="$(_get_maxfreq 6)"
     if [ "$b_max" -gt 2200000 ]; then
@@ -273,8 +251,7 @@ _get_mt6853_type()
     fi
 }
 
-_get_mt6873_type()
-{
+_get_mt6873_type(){
     local b_max
     b_max="$(_get_maxfreq 4)"
     if [ "$b_max" -gt 2500000 ]; then
@@ -284,8 +261,7 @@ _get_mt6873_type()
     fi
 }
 
-_get_mt6885_type()
-{
+_get_mt6885_type(){
     local b_max
     b_max="$(_get_maxfreq 4)"
     if [ "$b_max" -gt 2500000 ]; then
@@ -295,8 +271,7 @@ _get_mt6885_type()
     fi
 }
 
-_get_lahaina_type()
-{
+_get_lahaina_type(){
     local b_max
     b_max="$(_get_maxfreq 7)"
     if [ "$b_max" -gt 2600000 ]; then
@@ -307,22 +282,19 @@ _get_lahaina_type()
 }
 
 # $1:cfg_name
-_setup_platform_file()
-{
+_setup_platform_file(){
     mv -f $USER_PATH/cfg_uperf.json $USER_PATH/cfg_uperf.json.bak 2> /dev/null
     cp $BASEDIR/config/$1.json $USER_PATH/cfg_uperf.json 2> /dev/null
 }
 
-_place_user_config()
-{
+_place_user_config(){
     if [ ! -e "$USER_PATH/cfg_uperf_display.txt" ]; then
         cp $BASEDIR/config/cfg_uperf_display.txt $USER_PATH/cfg_uperf_display.txt 2> /dev/null
     fi
 }
 
 # $1:board_name
-_get_cfgname()
-{
+_get_cfgname(){
     local ret
     case "$1" in
     "lahaina")       ret="$(_get_lahaina_type)" ;;
@@ -373,25 +345,22 @@ _get_cfgname()
     echo "$ret"
 }
 
-uperf_print_banner()
-{
+uperf_print_banner(){
     echo ""
-    echo "* Uperf https://github.com/yc9559/uperf/"
-    echo "* Author: Matt Yang"
-    echo "* Version: v2 (21.07.25)"
+    echo "[*] Uperf https://github.com/yc9559/uperf/"
+    echo "[*] Author: Matt Yang"
+    echo "[*] Version: v2 (21.07.25)"
     echo ""
 }
 
-uperf_print_finish()
-{
-    echo "- Uperf installation was successful."
+uperf_print_finish(){
+    echo "[*] Uperf installation was successful."
 }
 
-uperf_install()
-{
-    echo "- Installing uperf"
-    echo "- ro.board.platform=$(getprop ro.board.platform)"
-    echo "- ro.product.board=$(getprop ro.product.board)"
+uperf_install(){
+    echo "[*] Installing uperf"
+    echo "[*] ro.board.platform=$(getprop ro.board.platform)"
+    echo "[*] ro.product.board=$(getprop ro.product.board)"
 
     local target
     local cfgname
@@ -406,7 +375,7 @@ uperf_install()
     if [ "$cfgname" != "unsupported" ] && [ -f $BASEDIR/config/$cfgname.json ]; then
         _setup_platform_file "$cfgname"
     else
-        _abort "! [$target] not supported."
+        echo "[*] $target not matching config files, some features may not work."
     fi
     _place_user_config
     rm -rf $BASEDIR/config
@@ -419,17 +388,13 @@ uperf_install()
 
     _set_perm_recursive $BASEDIR 0 0 0755 0644
     _set_perm_recursive $BASEDIR/bin 0 0 0755 0755
-    # in case of set_perm_recursive is broken
-    chmod 0755 $BASEDIR/bin/*
-
     rm -rf $BASEDIR/uperf
 }
 
-injector_install()
-{
-    echo "- Installing injector"
-    echo "- SELinux may be set PERMISSIVE for better compatibility"
-    echo "- To keep ENFORCING, please delete flags/allow_permissive"
+injector_install(){
+    echo "[*] Installing injector"
+    echo "[*] SELinux may be set PERMISSIVE for better compatibility"
+    echo "[*] To keep ENFORCING, please delete flags/allow_permissive"
 
     local src_path
     local dst_path
@@ -446,16 +411,11 @@ injector_install()
     cp "$src_path/libsfanalysis.so" "$dst_path"
     _set_perm "$BASEDIR/bin/sfa_injector" 0 0 0755 u:object_r:system_file:s0
     _set_perm "$dst_path/libsfanalysis.so" 0 0 0644 u:object_r:system_lib_file:s0
-
-    # in case of set_perm_recursive is broken
-    chmod 0755 $BASEDIR/bin/*
-
     rm -rf $BASEDIR/injector
 }
 
-powerhal_stub_install()
-{
-    echo "- Installing perfhal stub"
+powerhal_stub_install(){
+    echo "[*] Installing perfhal stub"
 
     _set_perm "$BASEDIR/system/vendor/etc/powerhint.json" 0 0 0755 u:object_r:vendor_configs_file:s0
     _set_perm "$BASEDIR/system/vendor/etc/powerscntbl.cfg" 0 0 0755 u:object_r:vendor_configs_file:s0
@@ -464,9 +424,8 @@ powerhal_stub_install()
     _set_perm "$BASEDIR/system/vendor/etc/perf/targetresourceconfigs.xml" 0 0 0755 u:object_r:vendor_configs_file:s0
 }
 
-busybox_install()
-{
-    echo "- Installing private busybox"
+busybox_install(){
+    echo "[*] Installing private busybox"
 
     local dst_path
     dst_path="$BASEDIR/bin/busybox/"
