@@ -4,7 +4,7 @@
 # Author: Matt Yang
 # Version: 20210225
 
-BASEDIR="$(dirname "$0")"
+BASEDIR="/data/adb/modules/xtweak"
 . $BASEDIR/pathinfo.sh
 . $BASEDIR/libcommon.sh
 
@@ -20,8 +20,7 @@ INJ_NAME="sfa_injector"
 ###############################
 
 # $1:process $2:dynamiclib $3:alog_tag
-inj_do_inject()
-{
+inj_do_inject(){
     log "[begin] injecting $2 to $1"
 
     local lib_path
