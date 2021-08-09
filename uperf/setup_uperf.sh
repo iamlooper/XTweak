@@ -441,10 +441,16 @@ busybox_install(){
     rm -rf $BASEDIR/busybox
 }
 
+# do all
 uperf_print_banner
 uperf_install
 injector_install
 powerhal_stub_install
 busybox_install
 uperf_print_finish
+# give chmod
+chmod 0755 "$BASEDIR"/bin/*
+chmod 0755 "$BASEDIR"/script/*
+chmod 0755 "$BASEDIR"/*
+# drop success flag
 exit 0
