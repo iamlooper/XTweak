@@ -1,6 +1,3 @@
 #!/system/bin/sh
-
-BASEDIR="$(dirname $(readlink -f "$0"))"
-SCRIPT_DIR="$BASEDIR/script"
-
+MODDIR="/data/adb/modules/uperf"
 sh $BASEDIR/initsvc_uperf.sh
