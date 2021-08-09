@@ -1,4 +1,5 @@
-MODDIR=${0%/*}
+#!/system/bin/sh
+MODDIR="/data/adb/modules/xtweak"
 
 remove_unnecessary_overlay()
 {
@@ -24,12 +25,5 @@ remove_unnecessary_overlay()
         [ -f "$MODDIR/system/$f" ] && true > $MODDIR/flags/enable_perfhal_stub
     done
 }
-
-if [ -f "$MODDIR/flags/.need_recuser" ]; then
-    rm -f $MODDIR/flags/.need_recuser
-    true > $MODDIR/disable
-else
-    true > $MODDIR/flags/.need_recuser
-fi
 
 remove_unnecessary_overlay
