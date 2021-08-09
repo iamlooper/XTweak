@@ -1,10 +1,10 @@
-#!/vendor/bin/sh
+#!/system/bin/sh
 # Uperf Service Script
 # https://github.com/yc9559/
 # Author: Matt Yang
 # Version: 20200401
 
-BASEDIR="$(dirname $(readlink -f "$0"))"
+BASEDIR="/data/adb/modules/xtweak"
 
 wait_until_login()
 {
