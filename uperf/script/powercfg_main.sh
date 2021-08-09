@@ -2,20 +2,18 @@
 # Uperf https://github.com/yc9559/uperf/
 # Author: Matt Yang
 
-BASEDIR="$(dirname "$0")"
+BASEDIR="/data/adb/modules/xtweak"
 . $BASEDIR/libcommon.sh
 . $BASEDIR/libuperf.sh
 
 # $1: power_mode
-apply_power_mode()
-{
+apply_power_mode(){
     uperf_set_powermode "$1"
     echo "Applying $1 done."
 }
 
 # $1: power_mode
-verify_power_mode()
-{
+verify_power_mode(){
     # fast -> performance
     case "$1" in
         "powersave"|"balance"|"performance") echo "$1" ;;
