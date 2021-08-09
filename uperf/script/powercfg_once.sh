@@ -4,14 +4,13 @@
 
 # Runonce after boot, to speed up the transition of power modes in powercfg
 
-BASEDIR="$(dirname "$0")"
+BASEDIR="/data/adb/modules/xtweak"
 . $BASEDIR/libcommon.sh
 . $BASEDIR/libcgroup.sh
 . $BASEDIR/libpowercfg.sh
 . $BASEDIR/libuperf.sh
 
-unify_cgroup()
-{
+unify_cgroup(){
     # clear stune & uclamp
     for g in background foreground top-app; do
         lock_val "0" /dev/stune/$g/schedtune.sched_boost_no_override
@@ -98,8 +97,7 @@ unify_cgroup()
     change_task_nice "magiskd" "19"
 }
 
-unify_cpufreq()
-{
+unify_cpufreq(){
     # no msm_performance limit
     set_cpufreq_min "0:0 1:0 2:0 3:0 4:0 5:0 6:0 7:0"
     set_cpufreq_max "0:9999000 1:9999000 2:9999000 3:9999000 4:9999000 5:9999000 6:9999000 7:9999000"
@@ -132,8 +130,7 @@ unify_cpufreq()
     set_governor_param "interactive/timer_slack" "0:12345678 2:12345678 4:12345678"
 }
 
-unify_sched()
-{
+unify_sched(){
     # disable sched global placement boost
     lock_val "0" $SCHED/sched_boost
     lock_val "1000" $SCHED/sched_min_task_util_for_boost
@@ -162,8 +159,7 @@ unify_sched()
     lock_val "200000" $SCHED/sched_migration_cost_ns
 }
 
-unify_lpm()
-{
+unify_lpm(){
     # enter C-state level 3 took ~500us
     # Qualcomm C-state ctrl
     lock_val "0" $LPM/sleep_disabled
@@ -181,8 +177,7 @@ unify_lpm()
     fi
 }
 
-disable_hotplug()
-{
+disable_hotplug(){
     # Exynos hotplug
     mutate "0" /sys/power/cpuhotplug/enabled
     mutate "0" $CPU/cpuhotplug/enabled
@@ -204,8 +199,7 @@ disable_hotplug()
     done
 }
 
-disable_kernel_boost()
-{
+disable_kernel_boost(){
     # Qualcomm
     lock_val "0" "/sys/devices/system/cpu/cpu_boost/*"
     lock_val "0" "/sys/devices/system/cpu/cpu_boost/parameters/*"
@@ -259,8 +253,7 @@ disable_kernel_boost()
     lock_val "0" "/sys/module/devfreq_boost/parameters/*"
 }
 
-disable_userspace_boost()
-{
+disable_userspace_boost(){
     # Qualcomm perfd
     stop perfd 2> /dev/null
 
