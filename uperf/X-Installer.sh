@@ -277,6 +277,7 @@ function set_permissions() {
   set_perm_recursive $MODPATH 0 0 0755 0644
   set_perm_recursive $MODPATH/system/bin 0 0 0755 0755
   set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755 
+  chmod -R 0755 $MODPATH/*
 }
 function enable_debugging() {
 # Enable debug logs
