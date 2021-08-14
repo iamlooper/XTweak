@@ -77,90 +77,73 @@ if [ ! -d $Path/XTweak ]; then
  mkdir -p $Path/XTweak
 fi
 XT=$Path/XTweak
-X_Installer() {
+function X_Installer() {
 awk '{print}' "$MODPATH"/xtweak_banner
 ui_print ""
 sleep 3.3  
-ui_print "[*] Universal Powerful Forcefulness Kernel Tweaker "
+ui_print "[*] UNIVERSAL POWERFUL FORCEFULNESS KERNEL TWEAKER "
 sleep 3.3
 if [ -d $MODDIR/KTSR ]; then
-ui_print ""
 ui_print "[*] KTSR Module is present, disabled for security purposes."
 touch $MODDIR/KSTR/disable
 
 elif [ -d MODDIR/FDE ]; then
-ui_print ""
 ui_print "[*] FDE.AI Module is present, disabled for security purposes" 
 touch $MODDIR/FDE/disable
 
 elif [ -d $MODDIR/MAGNETAR ]; then
-ui_print ""
 ui_print "[*] MAGNETAR Module is present, disabled for security purposes."
 touch $MODDIR/MAGNETAR/disable
 
 elif [ -d $MODDIR/ZeetaaTweaks ]; then
-ui_print ""
 ui_print "[*] ZeetaaTweaks Module is present, disabled for security purposes."
 touch $MODDIR/ZeetaaTweaks/disable
 
 elif [ -d $MODDIR/KTSRPRO ]; then
-ui_print ""
 ui_print "[*] KTSR PRO Module is present, disabled for security purposes."
 touch $MODDIR/KTSRPRO/disable
 
 elif [ -d $MODDIR/ZTS ]; then
-ui_print ""
 ui_print "[*] ZTS Module is present, disabled for security purposes."
 touch $MODDIR/ZTS/disable
 
 elif [ -d $MODDIR/Pulsar_Engine ]; then
-ui_print ""
 ui_print "[*] Pulsar Engine Module is present, disabled for security purposes."
 touch $MODDIR/Pulsar_Engine/disable
 
 elif [ -d $MODDIR/ktweak ]; then
-ui_print ""
 ui_print "[*] KTweak Module is present, disabled for security purposes."
 touch $MODDIR/ktweak/disable
 
 elif [ -d $MODDIR/high_perf_dac ]; then
-ui_print ""
 ui_print "[*] HIGH PERFORMANCE Module is present, disabled for security purposes."
 touch $MODDIR/high_perf_dac/disable
 
 elif [ -d $MODDIR/fkm_spectrum_injector ]; then
-ui_print ""
 ui_print "[*] FKM Injector Module is present, disabled for security purposes."
 touch $MODDIR/fkm_spectrum_injector/disable
 
 elif [ -d $MODDIR/toolbox8 ]; then
-ui_print ""
 ui_print "[*] Pandora's Box Module is present, disabled for security purposes."
 touch $MODDIR/MAGNETAR/disable
 
 elif [ -d $MODDIR/lazy ]; then
-ui_print ""
 ui_print "[*] Lazy Tweaks Module is present, disabled for security purposes."
 touch $MODDIR/lazy/disable
 
 elif [[ "$(pm list package ktweak)" ]]; then
-ui_print ""
 ui_print "[*] KTweak App is present, uninstall it to prevent conflicts."
 
 elif [[ "$(pm list package kitana)" ]]; then
-ui_print ""
 ui_print "[*] Kitana App is present, uninstall it to prevent conflicts."
 
 elif [[ "$(pm list package magnetarapp)" ]]; then
-ui_print ""
 ui_print "[*] MAGNETAR App is present, uninstall it to prevent conflicts."
 
 elif [[ "$(pm list package lsandroid)" ]]; then
-ui_print ""
 ui_print "[*] LSpeed App is present, uninstall it to prevent conflicts."
 
 elif [[ "$(pm list package feravolt)" ]]; then
-ui_print ""
 ui_print "[*] FDE.AI App is present, uninstall it to prevent conflicts."
 fi
 # Unzipping and preparing wget
@@ -175,9 +158,7 @@ unzip -o "$ZIPFILE" 'script/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'busybox/*' -d "$MODPATH" >&2
 
 # Preparing test and rest settings
-ui_print ""
 ui_print "[*] Preparing compatibility test..."
-ui_print ""
 if [[ -d $MODDIR/busybox-ndk ]] || [[ -d $MODDIR/busybox-brutal ]] || [[ -e /system/xbin/busybox ]] || [[ -e /system/bin/busybox ]] || [[ -e /vendor/bin/busybox ]]; then
 sleep 0.1
 else
@@ -198,43 +179,31 @@ rm -rf /data/adb/modules/xtweak/system.prop
 magiskhide enable
 fi
 ui_print "[*] Done checking compatibility, continuing to installation..."
-ui_print ""
 sleep 2
 ui_print "[*] Fetching various utilities from cloud ☁️ "
-ui_print ""
 fetch_util
 . $TMPDIR/addon/Volume-Key-Selector/install.sh
 sleep 0.1
-ui_print ""
 ui_print "[*] Installing XTweak..."
 sleep 2
 mode_select
 }
-mode_select() {
-ui_print ""
+function mode_select() {
 ui_print "[*] XTweak Modes Selector: "
 sleep 2
-ui_print ""
 ui_print "[*] Volume + = Switch × Volume - = Select "
-ui_print ""
 sleep 1.5
 ui_print " 1- Auto X (Automatically changes modes based on user behavior) "
-ui_print ""
 sleep 0.8
 ui_print " 2- Accumulator (Reduces cpu and gpu speeds to conserve more battery) "
-ui_print ""
 sleep 0.8
 ui_print " 3- Equalizer (Performs equally for battery and performance) "
-ui_print ""
 sleep 0.8
 ui_print " 4- Potency (Improve system's latency to provide speed on your phone) "
-ui_print ""
 sleep 0.8
 ui_print " 5- Output (Maximizes cpu and gpu speeds to attain highest level performance) "
-ui_print ""
 sleep 0.8
 ui_print "[*] Select which mode you want:"
-ui_print ""
 SM=1
 while true
 do
@@ -259,9 +228,7 @@ case $SM in
 5 ) FCTEXTAD1="Output";;
 esac
 
-ui_print ""
 ui_print "[*] Selected: $FCTEXTAD1 "
-ui_print ""
 ui_print "[*] XTweak has been installed successfully."
 
 if [[ "$FCTEXTAD1" == "AutoX" ]]
@@ -296,29 +263,25 @@ sh "$MODPATH"/setup_uperf.sh
 rm "$MODPATH"/setup_uperf.sh
 
 ui_print " --- Additional Notes --- "
-ui_print ""
 ui_print "[*] Reboot is required"
-ui_print ""
 ui_print "[*] Do not use XTweak with other optimizer modules"
-ui_print ""
 ui_print "[*] (su -c x-menu) to open XTweak Menu in Termux"
-ui_print ""
 ui_print "[*] Report issues to @tweak_projects_discuss on Telegram"
-ui_print ""
 ui_print "[*] Contact @infinity_looper for direct support"
-ui_print ""
 sleep 4
 ui_print "[*] Done!"
 set_permissions
 cleanup
 }
 #
-set_permissions() {
+function set_permissions() {
   set_perm_recursive $MODPATH 0 0 0755 0644
   set_perm_recursive $MODPATH/system/bin 0 0 0755 0755
   set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755 
 }
-template_extras() {
+function enable_debugging() {
+# Enable debug logs
+set -x
 # Only in recovery
 if ! $BOOTMODE; then
   ui_print "[*] Only uninstall is supported in recovery"
@@ -332,6 +295,4 @@ if ! $BOOTMODE; then
   rm -rf "$NVBASE"/modules_update/"$MODID" "$TMPDIR" 2>/dev/null
   exit 0
 fi
-# Enable debug logs
-set -x
 }
