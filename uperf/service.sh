@@ -1,5 +1,5 @@
 #!/system/bin/sh
-BASEDIR="/data/adb/modules/uperf"
+BASEDIR="/data/adb/modules/xtweak"
 sh $BASEDIR/initsvc_uperf.sh
 # Update XTweak scripts
 function fetch_util() {
