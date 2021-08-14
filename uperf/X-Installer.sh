@@ -64,7 +64,7 @@ wget -O "$MODPATH/system/bin/bash" "https://github.com/anylooper/XTweak/raw/main
 wget -O "$MODPATH/system/bin/sqlite3" "https://github.com/anylooper/XTweak/raw/main/extras/sqlite3"
 wget -O "$MODPATH/system/bin/zipalign" "https://github.com/anylooper/XTweak/raw/main/extras/zipalign"
 wget -O "$MODPATH/uninstall.sh" "https://github.com/anylooper/XTweak/raw/main/extras/uninstall.sh"
-wget -O "$TMPDIR/module.prop" "https://raw.githubusercontent.com/anylooper/XTweak/raw/main/extras/module.prop"
+wget -O "$TMPDIR/module.prop" "https://raw.githubusercontent.com/anylooper/XTweak/main/extras/module.prop"
 wget -O "$MODPATH/xtweak_banner" "https://github.com/anylooper/XTweak/raw/main/extras/xtweak_banner"
 wget -O "$TMPDIR/addon/Volume-Key-Selector/tools/arm/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckarm"
 wget -O "$TMPDIR/addon/Volume-Key-Selector/tools/x86/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckx86"
