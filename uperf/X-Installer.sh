@@ -10,14 +10,22 @@ SKIPUNZIP=1
 MODDIR=/data/adb/modules
 A=$(getprop ro.product.cpu.abi);
 COMPT=$(cat $MODPATH/test)
-function abort(){
+if [[ -e "/dev/XTweak" ]]; then
+    rm -rf "/dev/XTweak"
+fi
+Path=/dev
+if [ ! -d $Path/XTweak ]; then
+ mkdir -p $Path/XTweak
+fi
+XT=$Path/XTweak
+function abort() {
   ui_print "$1"
   rm -rf $MODPATH 2>/dev/null
   cleanup
   rm -rf $TMPDIR 2>/dev/null
   exit 1
 }
-function cleanup(){
+function cleanup() {
 rm -rf $MODPATH/addon 2>/dev/null
 rm -rf $MODPATH/test 2>/dev/null
 }
@@ -69,14 +77,6 @@ wget -O "$MODPATH/xtweak_banner" "https://raw.githubusercontent.com/anylooper/XT
 wget -O "$TMPDIR/addon/Volume-Key-Selector/tools/arm/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckarm"
 wget -O "$TMPDIR/addon/Volume-Key-Selector/tools/x86/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckx86"
 }
-if [[ -e "/dev/XTweak" ]]; then
-    rm -rf "/dev/XTweak"
-fi
-Path=/dev
-if [ ! -d $Path/XTweak ]; then
- mkdir -p $Path/XTweak
-fi
-XT=$Path/XTweak
 function X_Installer() {
 awk '{print}' "$MODPATH"/xtweak_banner
 ui_print ""
