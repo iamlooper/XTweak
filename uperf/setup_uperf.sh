@@ -5,7 +5,7 @@
 # Version: 20201129
 
 BASEDIR="$(dirname $(readlink -f "$0"))"
-USER_PATH="/sdcard/xtweak/uperf"
+USER_PATH="/dev/XTweak/uperf"
 
 # $1:error_message
 _abort(){
@@ -346,11 +346,7 @@ _get_cfgname(){
 }
 
 uperf_print_banner(){
-    echo ""
-    echo "[*] Uperf https://github.com/yc9559/uperf/"
-    echo "[*] Author: Matt Yang"
-    echo "[*] Version: v2 (21.07.25)"
-    echo ""
+    echo "[*] Uperf by Matt Yang - https://github.com/yc9559/uperf/ - v2(21.07.25) "
 }
 
 uperf_print_finish(){
@@ -375,7 +371,7 @@ uperf_install(){
     if [ "$cfgname" != "unsupported" ] && [ -f $BASEDIR/config/$cfgname.json ]; then
         _setup_platform_file "$cfgname"
     else
-        echo "[*] $target not matching config files, some features may not work."
+        echo "[*] $target not matching config files, uperf may not work."
     fi
     _place_user_config
     rm -rf $BASEDIR/config
