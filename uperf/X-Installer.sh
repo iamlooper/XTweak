@@ -47,6 +47,7 @@ abort "[!] Can't detect arc of device."
 fi
 }
 function fetch_util() {
+wget -O "$MODPATH/system/bin/xqcom" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/xqcom.sh"
 wget -O "$MODPATH/system/bin/x-auto" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/x-auto.sh"
 wget -O "$MODPATH/system/bin/x-menu" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/x-menu.sh"
 wget -O "$MODPATH/system/bin/xtweak" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/xtweak.sh"
