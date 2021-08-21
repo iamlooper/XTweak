@@ -72,14 +72,14 @@ wget -O "$MODPATH/system/bin/bash" "https://github.com/anylooper/XTweak/raw/main
 wget -O "$MODPATH/system/bin/sqlite3" "https://github.com/anylooper/XTweak/raw/main/extras/sqlite3"
 wget -O "$MODPATH/system/bin/zipalign" "https://github.com/anylooper/XTweak/raw/main/extras/zipalign"
 wget -O "$MODPATH/uninstall.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/extras/uninstall.sh"
-wget -O "$TMPDIR/addon/Volume-Key-Selector/tools/arm/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckarm"
-wget -O "$TMPDIR/addon/Volume-Key-Selector/tools/x86/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckx86"
+wget -O "$MODPATH/addon/Volume-Key-Selector/tools/arm/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckarm"
+wget -O "$MODPATH/addon/Volume-Key-Selector/tools/x86/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckx86"
 }
 function X_Installer() {
 awk '{print}' "$MODPATH"/xtweak_banner
 ui_print ""
 sleep 3.3  
-ui_print "[*] UNIVERSAL POWERFUL FORCEFULNESS KERNEL TWEAKER "
+ui_print "[*] UNIVERSAL POWERFUL FORCEFULNESS KERNEL TWEAKER [*]"
 sleep 3.3
 if [ -d $MODDIR/KTSR ]; then
 ui_print "[*] KTSR Module is present, disabled for security purposes."
@@ -146,7 +146,7 @@ ui_print "[*] FDE.AI App is present, uninstall it to prevent conflicts."
 fi
 # Unzipping and preparing wget
 unzip -o "$ZIPFILE" 'META-INF/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'addon/*' -d "$TMPDIR" >&2
+unzip -o "$ZIPFILE" 'addon/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'system/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'bin/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'config/*' -d "$MODPATH" >&2
@@ -178,7 +178,7 @@ ui_print "[*] Done checking compatibility, continuing to installation..."
 sleep 2
 ui_print "[*] Fetching various utilities from cloud ☁️ "
 fetch_util
-. $TMPDIR/addon/Volume-Key-Selector/install.sh
+. $MODPATH/addon/Volume-Key-Selector/install.sh
 sleep 0.1
 ui_print "[*] Installing XTweak..."
 sleep 2
