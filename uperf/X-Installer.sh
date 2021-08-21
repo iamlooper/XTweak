@@ -171,9 +171,7 @@ sleep 0.1
 fi
 if [ -d /data/adb/modules/xtweak ]; then
 magiskhide disable
-rm -rf /data/adb/modules/xtweak/system
-rm -rf /data/adb/modules/xtweak/service.sh 
-rm -rf /data/adb/modules/xtweak/system.prop
+rm -Rf /data/adb/modules/xtweak/*
 magiskhide enable
 fi
 ui_print "[*] Done checking compatibility, continuing to installation..."
@@ -278,7 +276,7 @@ function set_permissions() {
   set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755 
   chmod -R 0755 $MODPATH/*
 }
-function enable_debugging() {
+function template_essentials() {
 # Enable debug logs
 set -x
 # Only in recovery
@@ -291,7 +289,7 @@ if ! $BOOTMODE; then
   [ -s "$INFO" ] && install_script "$MODPATH"/uninstall.sh || rm -f "$INFO" "$MODPATH"/uninstall.sh
   recovery_cleanup
   cleanup
-  rm -rf "$NVBASE"/modules_update/"$MODID" "$TMPDIR" 2>/dev/null
+  rm -Rf "$NVBASE"/modules_update/"$MODID" "$TMPDIR" 2>/dev/null
   exit 0
 fi
 }
