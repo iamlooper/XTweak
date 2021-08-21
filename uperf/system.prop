@@ -17,7 +17,7 @@ persist.sys.pnp.topact.optimize=on
 ro.legal_solution_apps.support=1
 ro.lmk.kill_heaviest_task=true
 ro.lmk.kill_timeout_ms=10
-ro.lmk.use_minfree_levels=true
+ro.lmk.use_minfree_levels=false
 
 # Disable logd logging dameon
 ro.logd.kernel=false
