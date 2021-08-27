@@ -5,8 +5,8 @@
 MODDIR=/data/adb/modules
 A=$(getprop ro.product.cpu.abi);
 COMPT=$(cat $MODPATH/test)
-if [[ -e "/dev/XTweak" ]]; then
-    rm -rf "/dev/XTweak"
+if [ -e "/dev/XTweak" ]; then
+    rm -Rf "/dev/XTweak"
 fi
 Path=/dev
 if [ ! -d $Path/XTweak ]; then
@@ -15,14 +15,14 @@ fi
 XT=$Path/XTweak
 function abort() {
   ui_print "$1"
-  rm -rf $MODPATH 2>/dev/null
+  rm -Rf $MODPATH 2>/dev/null
   cleanup
-  rm -rf $TMPDIR 2>/dev/null
+  rm -Rf $TMPDIR 2>/dev/null
   exit 1
 }
 function cleanup() {
-rm -rf $MODPATH/addon 2>/dev/null
-rm -rf $MODPATH/test 2>/dev/null
+rm -Rf $MODPATH/addon 2>/dev/null
+rm -Rf $MODPATH/test 2>/dev/null
 }
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
