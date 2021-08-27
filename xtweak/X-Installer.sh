@@ -138,8 +138,7 @@ ui_print "[*] LSpeed App is present, uninstall it to prevent conflicts."
 elif [[ "$(pm list package feravolt)" ]]; then
 ui_print "[*] FDE.AI App is present, uninstall it to prevent conflicts."
 fi
-# Unzipping and preparing wget
-unzip -o "$ZIPFILE" 'META-INF/*' -d "$MODPATH" >&2
+# Unzipping
 unzip -o "$ZIPFILE" 'addon/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'system/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'bin/*' -d "$MODPATH" >&2
@@ -211,39 +210,39 @@ fi
 done
 
 case $SM in
-1 ) FCTEXTAD1="AutoX";;
-2 ) FCTEXTAD1="Accumulator";;
-3 ) FCTEXTAD1="Equalizer";;
-4 ) FCTEXTAD1="Potency";;
-5 ) FCTEXTAD1="Output";;
+1) FCTEXTAD1="AutoX";;
+2) FCTEXTAD1="Accumulator";;
+3) FCTEXTAD1="Equalizer";;
+4) FCTEXTAD1="Potency";;
+5) FCTEXTAD1="Output";;
 esac
 
 ui_print "[*] Selected: $FCTEXTAD1 "
 ui_print "[*] XTweak has been installed successfully."
 
-if [[ "$FCTEXTAD1" == "AutoX" ]]
+if [ "$FCTEXTAD1" -eq "AutoX" ]
 then
-killall -9 x-auto >/dev/null 2>&1
+killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "1" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Accumulator" ]]
+elif [ "$FCTEXTAD1" -eq "Accumulator" ]
 then
-killall -9 x-auto >/dev/null 2>&1
+killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "2" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Equalizer" ]]
+elif [ "$FCTEXTAD1" -eq "Equalizer" ]
 then
-killall -9 x-auto >/dev/null 2>&1
+killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "3" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Potency" ]]
+elif [ "$FCTEXTAD1" -eq "Potency" ]
 then
-killall -9 x-auto >/dev/null 2>&1
+killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "4" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Output" ]]
+elif [ "$FCTEXTAD1" -eq "Output" ]
 then
-killall -9 x-auto >/dev/null 2>&1
+killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "5" 2>/dev/null
 fi
 
