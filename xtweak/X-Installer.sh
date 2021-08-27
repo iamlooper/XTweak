@@ -2,11 +2,6 @@
 # XTweak 2021
 # FULLY MODIFIED BY INFINITYLOOPER
 # SOME TEMPLATE STUFF BY Zackptg5
-SKIPMOUNT=true
-PROPFILE=true
-POSTFSDATA=true
-LATESTARTSERVICE=true
-SKIPUNZIP=1
 MODDIR=/data/adb/modules
 A=$(getprop ro.product.cpu.abi);
 COMPT=$(cat $MODPATH/test)
