@@ -2,7 +2,7 @@
 # XTweak 2021
 # FULLY MODIFIED BY INFINITYLOOPER
 # SOME TEMPLATE STUFF BY Zackptg5
-SKIPMOUNT=false
+SKIPMOUNT=true
 PROPFILE=true
 POSTFSDATA=true
 LATESTARTSERVICE=true
@@ -31,50 +31,48 @@ rm -rf $MODPATH/test 2>/dev/null
 }
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
-wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/anylooper/XTweak/raw/main/busybox/busybox8"
+wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
 
 elif [ "$A" = "$(echo "$A"|grep "armeabi")" ]; then
-wget -O "$MODPATH/system/xbin/busybox7" "https://github.com/anylooper/XTweak/raw/main/busybox/busybox7"
+wget -O "$MODPATH/system/xbin/busybox7" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox7"
 
 elif [ "$A" = "$(echo "$A"|grep "x86_64")" ]; then
-wget -O "$MODPATH/system/xbin/busybox64" "https://github.com/anylooper/XTweak/raw/main/busybox/busybox64"
+wget -O "$MODPATH/system/xbin/busybox64" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox64"
 
 elif [ "$A" = "$(echo "$A"|grep "x86")" ]; then
-wget -O "$MODPATH/system/xbin/busybox86" "https://github.com/anylooper/XTweak/raw/main/busybox/busybox86"
+wget -O "$MODPATH/system/xbin/busybox86" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox86"
 
 else
 abort "[!] Can't detect arc of device."
 fi
 }
 function fetch_util() {
-wget -O "$MODPATH/system/bin/xqcom" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/xqcom.sh"
-wget -O "$MODPATH/system/bin/x-auto" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/x-auto.sh"
-wget -O "$MODPATH/system/bin/x-menu" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/x-menu.sh"
-wget -O "$MODPATH/system/bin/xtweak" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/xtweak.sh"
-wget -O "$MODPATH/setup_uperf.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/setup_uperf.sh"
-wget -O "$MODPATH/initsvc_uperf.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/initsvc_uperf.sh"
-wget -O "$MODPATH/run_uperf.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/run_uperf.sh"
-wget -O "$MODPATH/post-fs-data.sh" "https:https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/post-fs-data.sh"
-wget -O "$MODPATH/service.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/service.sh"
-wget -O "$MODPATH/system.prop" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/system.prop"
-wget -O "$MODPATH/busybox/busybox-arm-selinux" "https://github.com/anylooper/XTweak/raw/main/uperf/busybox/busybox-arm-selinux"
-wget -O "$MODPATH/busybox/busybox-arm64-selinux" "https://github.com/anylooper/XTweak/raw/main/uperf/busybox/busybox-arm64-selinux"
-wget -O "$MODPATH/script/libcgroup.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/libcgroup.sh"
-wget -O "$MODPATH/script/libcommon.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/libcommon.sh"
-wget -O "$MODPATH/script/libpowercfg.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/libpowercfg.sh"
-wget -O "$MODPATH/script/libuperf.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/libuperf.sh"
-wget -O "$MODPATH/script/pathinfo.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/pathinfo.sh"
-wget -O "$MODPATH/script/powercfg_main.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/powercfg_main.sh"
-wget -O "$MODPATH/script/powercfg_once.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/powercfg_once.sh"
-wget -O "$MODPATH/script/prepare.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/prepare.sh"
-wget -O "$MODPATH/script/start_injector.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/start_injector.sh"
-wget -O "$MODPATH/script/vtools-powercfg.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/uperf/script/vtools-powercfg.sh"
+wget -O "$MODPATH/system/bin/xqcom" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/xqcom.sh"
+wget -O "$MODPATH/system/bin/xauto" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/xauto.sh"
+wget -O "$MODPATH/system/bin/xmenu" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/xmenu.sh"
+wget -O "$MODPATH/system/bin/xtweak" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/xtweak.sh"
+wget -O "$MODPATH/setup_uperf.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/setup_uperf.sh"
+wget -O "$MODPATH/initsvc_uperf.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/initsvc_uperf.sh"
+wget -O "$MODPATH/run_uperf.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/run_uperf.sh"
+wget -O "$MODPATH/post-fs-data.sh" "https:https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/post-fs-data.sh"
+wget -O "$MODPATH/service.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/service.sh"
+wget -O "$MODPATH/system.prop" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/system.prop"
+wget -O "$MODPATH/busybox/busybox-arm-selinux" "https://github.com/iamlooper/XTweak/raw/main/uperf/busybox/busybox-arm-selinux"
+wget -O "$MODPATH/busybox/busybox-arm64-selinux" "https://github.com/iamlooper/XTweak/raw/main/uperf/busybox/busybox-arm64-selinux"
+wget -O "$MODPATH/script/libcgroup.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libcgroup.sh"
+wget -O "$MODPATH/script/libcommon.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libcommon.sh"
+wget -O "$MODPATH/script/libpowercfg.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libpowercfg.sh"
+wget -O "$MODPATH/script/libuperf.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libuperf.sh"
+wget -O "$MODPATH/script/pathinfo.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/pathinfo.sh"
+wget -O "$MODPATH/script/powercfg_main.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/powercfg_main.sh"
+wget -O "$MODPATH/script/powercfg_once.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/powercfg_once.sh"
+wget -O "$MODPATH/script/prepare.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/prepare.sh"
+wget -O "$MODPATH/script/start_injector.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/start_injector.sh"
+wget -O "$MODPATH/script/vtools-powercfg.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/vtools-powercfg.sh"
 wget -O "$MODPATH/system/bin/bash" "https://github.com/anylooper/XTweak/raw/main/extras/bash"
-wget -O "$MODPATH/system/bin/sqlite3" "https://github.com/anylooper/XTweak/raw/main/extras/sqlite3"
-wget -O "$MODPATH/system/bin/zipalign" "https://github.com/anylooper/XTweak/raw/main/extras/zipalign"
-wget -O "$MODPATH/uninstall.sh" "https://raw.githubusercontent.com/anylooper/XTweak/main/extras/uninstall.sh"
-wget -O "$MODPATH/addon/Volume-Key-Selector/tools/arm/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckarm"
-wget -O "$MODPATH/addon/Volume-Key-Selector/tools/x86/keycheck" "https://github.com/anylooper/XTweak/raw/main/extras/keycheckx86"
+wget -O "$MODPATH/system/bin/sqlite3" "https://github.com/iamlooper/XTweak/raw/main/extras/sqlite3"
+wget -O "$MODPATH/system/bin/zipalign" "https://github.com/iamlooper/XTweak/raw/main/extras/zipalign"
+wget -O "$MODPATH/uninstall.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/uninstall.sh"
 }
 function X_Installer() {
 awk '{print}' "$MODPATH"/xtweak_banner
@@ -158,7 +156,7 @@ unzip -o "$ZIPFILE" 'busybox/*' -d "$MODPATH" >&2
 
 # Preparing test and rest settings
 ui_print "[*] Preparing compatibility test..."
-if [[ -d $MODDIR/busybox-ndk ]] || [[ -d $MODDIR/busybox-brutal ]] || [[ -e /system/xbin/busybox ]] || [[ -e /system/bin/busybox ]] || [[ -e /vendor/bin/busybox ]]; then
+if [ -d $MODDIR/busybox-ndk ] | [ -d $MODDIR/busybox-brutal ] | [ -e /system/xbin/busybox ] | [ -e /system/bin/busybox ] | [ -e /vendor/bin/busybox ]; then
 sleep 0.1
 else
 busybox_installer
@@ -170,7 +168,7 @@ sleep 0.1
 else
 sleep 0.1
 fi
-if [ -d /data/adb/modules/xtweak ]; then
+if [ -e /data/adb/modules/xtweak ]; then
 magiskhide disable
 rm -Rf /data/adb/modules/xtweak/*
 magiskhide enable
@@ -262,7 +260,7 @@ rm "$MODPATH"/setup_uperf.sh
 ui_print " --- Additional Notes --- "
 ui_print "[*] Reboot is required"
 ui_print "[*] Do not use XTweak with other optimizer modules"
-ui_print "[*] (su -c x-menu) to open XTweak Menu in Termux"
+ui_print "[*] (su -c xmenu) to open XTweak Menu in Termux"
 ui_print "[*] Report issues to @tweak_projects_discuss on Telegram"
 ui_print "[*] Contact @infinity_looper for direct support"
 sleep 4
@@ -274,8 +272,7 @@ cleanup
 function set_permissions() {
   set_perm_recursive $MODPATH 0 0 0755 0644
   set_perm_recursive $MODPATH/system/bin 0 0 0755 0755
-  set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755 
-  chmod -R 0755 $MODPATH/*
+  set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755
 }
 function template_essentials() {
 # Enable debug logs
