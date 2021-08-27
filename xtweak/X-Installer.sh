@@ -31,20 +31,20 @@ mkdir -p $MODPATH/flags
 mkdir -p $MODPATH/script
 }
 function busybox_installer() {
-if [ "$A" -eq "$(echo "$A"|grep "arm64")" ]; then
+if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
 
-elif [ "$A" -eq "$(echo "$A"|grep "armeabi")" ]; then
+elif [ "$A" = "$(echo "$A"|grep "armeabi")" ]; then
 wget -O "$MODPATH/system/xbin/busybox7" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox7"
 
-elif [ "$A" -eq "$(echo "$A"|grep "x86_64")" ]; then
+elif [ "$A" = "$(echo "$A"|grep "x86_64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox64" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox64"
 
-elif [ "$A" -eq "$(echo "$A"|grep "x86")" ]; then
+elif [ "$A" = "$(echo "$A"|grep "x86")" ]; then
 wget -O "$MODPATH/system/xbin/busybox86" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox86"
 
 else
-abort "[!] Can't detect arc of device."
+ui_print "[!] Can't detect arc of device, continuing without fetching busybox."
 fi
 }
 function fetch_util() {
