@@ -3,8 +3,7 @@
 # FULLY MODIFIED BY INFINITYLOOPER
 # SOME TEMPLATE STUFF BY Zackptg5
 MODDIR=/data/adb/modules
-A=$(getprop ro.product.cpu.abi);
-COMPT=$(cat $MODPATH/test)
+A=$(getprop ro.product.cpu.abi)
 if [ -e "/dev/XTweak" ]; then
     rm -Rf "/dev/XTweak"
 fi
@@ -22,19 +21,26 @@ function abort() {
 }
 function cleanup() {
 rm -Rf $MODPATH/addon 2>/dev/null
-rm -Rf $MODPATH/test 2>/dev/null
+rm -Rf $MODPATH/X-Installer.sh 2>/dev/null
+rm -Rf $TMPDIR 2>/dev/null 2>/dev/null
+}
+function make_dirs() {
+mkdir -p $MODPATH/system/xbin
+mkdir -p $MODPATH/bin
+mkdir -p $MODPATH/flags
+mkdir -p $MODPATH/script
 }
 function busybox_installer() {
-if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
+if [ "$A" -eq "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
 
-elif [ "$A" = "$(echo "$A"|grep "armeabi")" ]; then
+elif [ "$A" -eq "$(echo "$A"|grep "armeabi")" ]; then
 wget -O "$MODPATH/system/xbin/busybox7" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox7"
 
-elif [ "$A" = "$(echo "$A"|grep "x86_64")" ]; then
+elif [ "$A" -eq "$(echo "$A"|grep "x86_64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox64" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox64"
 
-elif [ "$A" = "$(echo "$A"|grep "x86")" ]; then
+elif [ "$A" -eq "$(echo "$A"|grep "x86")" ]; then
 wget -O "$MODPATH/system/xbin/busybox86" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox86"
 
 else
@@ -148,26 +154,20 @@ unzip -o "$ZIPFILE" 'injector/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'script/*' -d "$MODPATH" >&2
 unzip -o "$ZIPFILE" 'busybox/*' -d "$MODPATH" >&2
 
+# Make dirs
+make_dirs
 # Preparing test and rest settings
-ui_print "[*] Preparing compatibility test..."
+ui_print "[*] Preparing..."
 if [ -d $MODDIR/busybox-ndk ] | [ -d $MODDIR/busybox-brutal ] | [ -e /system/xbin/busybox ] | [ -e /system/bin/busybox ] | [ -e /vendor/bin/busybox ]; then
 sleep 0.1
 else
 busybox_installer
-fi
-touch $MODPATH/test
-echo "1" > $MODPATH/test 
-if [ "$COMPT" -eq "$(echo "$COMPT"|grep "1")" ]; then
-sleep 0.1
-else
-sleep 0.1
 fi
 if [ -e /data/adb/modules/xtweak ]; then
 magiskhide disable
 rm -Rf /data/adb/modules/xtweak/*
 magiskhide enable
 fi
-ui_print "[*] Done checking compatibility, continuing to installation..."
 sleep 2
 ui_print "[*] Fetching various utilities from cloud ☁️ "
 fetch_util
@@ -266,6 +266,7 @@ cleanup
 function set_permissions() {
   set_perm_recursive $MODPATH 0 0 0755 0644
   set_perm_recursive $MODPATH/system/bin 0 0 0755 0755
+  set_perm_recursive $MODPATH/system/xbin 0 0 0755 0755
   set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755
 }
 function template_essentials() {
@@ -278,7 +279,6 @@ if ! $BOOTMODE; then
   ui_print "[*] Uninstalling!"
   ui_print ""
   touch "$MODPATH"/remove
-  [ -s "$INFO" ] && install_script "$MODPATH"/uninstall.sh || rm -f "$INFO" "$MODPATH"/uninstall.sh
   recovery_cleanup
   cleanup
   rm -Rf "$NVBASE"/modules_update/"$MODID" "$TMPDIR" 2>/dev/null
