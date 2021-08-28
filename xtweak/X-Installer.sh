@@ -280,10 +280,10 @@ cleanup
 }
 #
 function set_permissions() {
-  set_perm_recursive $MODPATH 0 0 0755 0644
-  set_perm_recursive $MODPATH/system/bin 0 0 0755 0755
-  set_perm_recursive $MODPATH/system/xbin 0 0 0755 0755
-  set_perm_recursive $MODPATH/system/vendor/etc 0 0 0755 0755
+  set_perm_recursive "$MODPATH" 0 0 0755 0644
+  set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
 }
 function template_essentials() {
 # Enable debug logs
