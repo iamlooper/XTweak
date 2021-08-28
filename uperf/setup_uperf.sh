@@ -377,9 +377,9 @@ uperf_install(){
     rm -Rf $BASEDIR/config
 
     if [ "$(_is_aarch64)" -eq "true" ]; then
-        cp "$BASEDIR/uperf/aarch64/uperf" "$BASEDIR/bin"
+        wget -O "$BASEDIR/bin/uperf" "https://github.com/iamlooper/XTweak/raw/main/uperf/script/uperf64"
     else
-        cp "$BASEDIR/uperf/arm/uperf" "$BASEDIR/bin"
+        wget -O "$BASEDIR/bin/uperf" "https://github.com/iamlooper/XTweak/raw/main/uperf/script/uperfarm"
     fi
 
     _set_perm_recursive "$BASEDIR" 0 0 0755 0644
