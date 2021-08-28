@@ -275,9 +275,7 @@ set -x
 # Only in recovery
 if ! $BOOTMODE; then
   ui_print "[*] Only uninstall is supported in recovery"
-  ui_print ""
   ui_print "[*] Uninstalling!"
-  ui_print ""
   touch "$MODPATH"/remove
   recovery_cleanup
   cleanup
