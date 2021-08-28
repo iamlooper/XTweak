@@ -141,9 +141,6 @@ sleep 0.1
 else
 busybox_installer
 fi
-if [ -e /data/adb/modules/xtweak ]; then
-remove_old_files
-fi
 sleep 2
 ui_print "[*] Fetching various utilities from cloud ☁️ "
 fetch_util
@@ -222,6 +219,9 @@ killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "5" 2>/dev/null
 fi
 
+# Exuecute setup_uperf.sh
+sh "$MODPATH"/setup_uperf.sh
+
 ui_print " --- Additional Notes --- "
 ui_print "[*] Reboot is required"
 ui_print "[*] Do not use XTweak with other optimizer modules"
@@ -229,7 +229,4 @@ ui_print "[*] (su -c xmenu) to open XTweak Menu in Termux"
 ui_print "[*] Report issues to @tweak_projects_discuss on Telegram"
 ui_print "[*] Contact @infinity_looper for direct support"
 sleep 4
-
-# Give perms
-set_permissions
 }
