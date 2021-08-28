@@ -1,8 +1,6 @@
 #!/system/bin/sh
 # XTweak 2021
-# FULLY MODIFIED BY INFINITYLOOPER
-# SOME TEMPLATE STUFF BY Zackptg5
-SKIPUNZIP=1
+# FULLY MODIFIED BY LOOPER (iamlooper @ github)
 MODDIR=/data/adb/modules
 A=$(getprop ro.product.cpu.abi)
 if [ -e "/data/xtweak" ]; then
@@ -20,11 +18,7 @@ function abort() {
   rm -Rf $TMPDIR 2>/dev/null
   exit 1
 }
-function cleanup() {
-rm -Rf $MODPATH/addon 2>/dev/null
-rm -Rf $MODPATH/X-Installer.sh 2>/dev/null
-rm -Rf $TMPDIR 2>/dev/null 2>/dev/null
-}
+
 function make_dirs() {
 mkdir -p $MODPATH/system/bin
 mkdir -p $MODPATH/system/xbin
@@ -32,24 +26,7 @@ mkdir -p $MODPATH/bin
 mkdir -p $MODPATH/flags
 mkdir -p $MODPATH/script
 }
-function remove_old_files() {
-if [ -f "$INFO" ]; then
-  while read LINE; do
-    if [ "$(echo -n "$LINE" | tail -c 1)" == "~" ]; then
-      continue
-    elif [ -f "$LINE~" ]; then
-      mv -f "$LINE"~ "$LINE"
-    else
-      rm -f "$LINE"
-      while true; do
-        LINE=$(dirname "$LINE")
-        [ "$(ls -A "$LINE" 2>/dev/null)" ] && break 1 || rm -rf "$LINE"
-      done
-    fi
-  done < "$INFO"
-  rm -f "$INFO"
-fi
-}
+
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
@@ -262,11 +239,6 @@ killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "5" 2>/dev/null
 fi
 
-# Exuecute setup_uperf.sh
-sh "$MODPATH"/setup_uperf.sh
-[ "$?" != "0" ] && ui_print "[*] Uperf setup script not found, finishing installations..."
-rm "$MODPATH"/setup_uperf.sh
-
 ui_print " --- Additional Notes --- "
 ui_print "[*] Reboot is required"
 ui_print "[*] Do not use XTweak with other optimizer modules"
@@ -274,28 +246,7 @@ ui_print "[*] (su -c xmenu) to open XTweak Menu in Termux"
 ui_print "[*] Report issues to @tweak_projects_discuss on Telegram"
 ui_print "[*] Contact @infinity_looper for direct support"
 sleep 4
-ui_print "[*] Done!"
+
+# Give perms
 set_permissions
-cleanup
-}
-#
-function set_permissions() {
-  set_perm_recursive "$MODPATH" 0 0 0755 0644
-  set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
-  set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
-  set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
-}
-function template_essentials() {
-# Enable debug logs
-set -x
-# Only in recovery
-if ! $BOOTMODE; then
-  ui_print "[*] Only uninstall is supported in recovery"
-  ui_print "[*] Uninstalling!"
-  touch "$MODPATH"/remove
-  recovery_cleanup
-  cleanup
-  rm -Rf "$NVBASE"/modules_update/"$MODID" 2>/dev/null
-  exit 0
-fi
 }
