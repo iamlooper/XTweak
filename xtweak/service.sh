@@ -9,6 +9,10 @@ done
 # Sleep until some time to complete init
 sleep 30
 
+# Mkdir and give chmod
+mkdir -p "/data/xtweak"
+chmod -R 0755 "/data/xtweak"
+
 # Start uperf
 sh $BASEDIR/initsvc_uperf.sh
 
