@@ -5,14 +5,14 @@
 SKIPUNZIP=1
 MODDIR=/data/adb/modules
 A=$(getprop ro.product.cpu.abi)
-if [ -e "/dev/XTweak" ]; then
-    rm -Rf "/dev/XTweak"
+if [ -e "/data/xtweak" ]; then
+    rm -Rf "/data/xtweak"
 fi
-Path=/dev
-if [ ! -d $Path/XTweak ]; then
- mkdir -p $Path/XTweak
+PATH=/data
+if [ ! -d $PATH/xtweak ]; then
+ mkdir -p "$PATH/xtweak"
 fi
-XT=$Path/XTweak
+XT=$PATH/xtweak
 function abort() {
   ui_print "$1"
   rm -Rf $MODPATH 2>/dev/null
@@ -26,6 +26,7 @@ rm -Rf $MODPATH/X-Installer.sh 2>/dev/null
 rm -Rf $TMPDIR 2>/dev/null 2>/dev/null
 }
 function make_dirs() {
+mkdir -p $MODPATH/system/bin
 mkdir -p $MODPATH/system/xbin
 mkdir -p $MODPATH/bin
 mkdir -p $MODPATH/flags
@@ -177,7 +178,7 @@ unzip -o "$ZIPFILE" 'busybox/*' -d "$MODPATH" >&2
 make_dirs
 # Preparing test and rest settings
 ui_print "[*] Preparing..."
-if [ -d $MODDIR/busybox-ndk ] | [ -d $MODDIR/busybox-brutal ] | [ -e /system/xbin/busybox ] | [ -e /system/bin/busybox ] | [ -e /vendor/bin/busybox ]; then
+if [ -d $MODDIR/busybox-ndk ] && [ -d $MODDIR/busybox-brutal ] && [ -e /system/xbin/busybox ] && [ -e /system/bin/busybox ] && [ -e /vendor/bin/busybox ]; then
 sleep 0.1
 else
 busybox_installer
@@ -296,7 +297,7 @@ if ! $BOOTMODE; then
   touch "$MODPATH"/remove
   recovery_cleanup
   cleanup
-  rm -Rf "$NVBASE"/modules_update/"$MODID" "$TMPDIR" 2>/dev/null
+  rm -Rf "$NVBASE"/modules_update/"$MODID" 2>/dev/null
   exit 0
 fi
 }
