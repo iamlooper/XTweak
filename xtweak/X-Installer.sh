@@ -128,10 +128,10 @@ elif [[ "$(pm list package feravolt)" ]]; then
 ui_print "[*] FDE.AI App is present, uninstall it to prevent conflicts."
 fi
 # Unzipping
-zipout "addon/*" "$MODPATH"
-zipout "system/*" "$MODPATH"
-zipout "config/*" "$MODPATH"
-zipout "injector/*" "$MODPATH"
+unzip -o "$ZIPFILE" 'addon/*' -d "$MODPATH" >&2
+unzip -o "$ZIPFILE" 'system/*' -d "$MODPATH" >&2
+unzip -o "$ZIPFILE" 'config/*' -d "$MODPATH" >&2
+unzip -o "$ZIPFILE" 'injector/*' -d "$MODPATH" >&2
 # Make dirs
 make_dirs
 # Preparing test and rest settings
