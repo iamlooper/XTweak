@@ -78,8 +78,6 @@ wget -O "$MODPATH/run_uperf.sh" "https://raw.githubusercontent.com/iamlooper/XTw
 wget -O "$MODPATH/post-fs-data.sh" "https:https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/post-fs-data.sh"
 wget -O "$MODPATH/service.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/service.sh"
 wget -O "$MODPATH/system.prop" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/system.prop"
-wget -O "$MODPATH/busybox/busybox-arm-selinux" "https://github.com/iamlooper/XTweak/raw/main/uperf/busybox/busybox-arm-selinux"
-wget -O "$MODPATH/busybox/busybox-arm64-selinux" "https://github.com/iamlooper/XTweak/raw/main/uperf/busybox/busybox-arm64-selinux"
 wget -O "$MODPATH/script/libcgroup.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libcgroup.sh"
 wget -O "$MODPATH/script/libcommon.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libcommon.sh"
 wget -O "$MODPATH/script/libpowercfg.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/libpowercfg.sh"
