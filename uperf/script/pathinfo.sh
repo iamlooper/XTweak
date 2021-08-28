@@ -4,7 +4,7 @@
 # Author: Matt Yang
 
 MODULE_PATH="/data/adb/modules/xtweak"
-USER_PATH="/sdcard/XTweak/uperf"
+USER_PATH="/data/xtweak/uperf"
 PANEL_FILE="$USER_PATH/panel_uperf.txt"
 LOG_FILE="$USER_PATH/log_uperf_initsvc.log"
 FLAGS="$MODULE_PATH/flags"
