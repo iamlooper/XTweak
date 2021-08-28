@@ -30,6 +30,24 @@ mkdir -p $MODPATH/bin
 mkdir -p $MODPATH/flags
 mkdir -p $MODPATH/script
 }
+function remove_old_files() {
+if [ -f "$INFO" ]; then
+  while read LINE; do
+    if [ "$(echo -n "$LINE" | tail -c 1)" == "~" ]; then
+      continue
+    elif [ -f "$LINE~" ]; then
+      mv -f "$LINE"~ "$LINE"
+    else
+      rm -f "$LINE"
+      while true; do
+        LINE=$(dirname "$LINE")
+        [ "$(ls -A "$LINE" 2>/dev/null)" ] && break 1 || rm -rf "$LINE"
+      done
+    fi
+  done < "$INFO"
+  rm -f "$INFO"
+fi
+}
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
@@ -164,9 +182,7 @@ else
 busybox_installer
 fi
 if [ -e /data/adb/modules/xtweak ]; then
-magiskhide disable
-rm -Rf /data/adb/modules/xtweak/*
-magiskhide enable
+remove_old_files
 fi
 sleep 2
 ui_print "[*] Fetching various utilities from cloud ☁️ "
