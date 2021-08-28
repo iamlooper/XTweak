@@ -8,13 +8,6 @@ if [ -e "/data/xtweak" ]; then
     rm -rf "/data/xtweak"
     mkdir -p "$PATH/xtweak"
 fi
-function abort() {
-  ui_print "$1"
-  rm -Rf $MODPATH 2>/dev/null
-  cleanup
-  rm -Rf $TMPDIR 2>/dev/null
-  exit 1
-}
 function make_dirs() {
 mkdir -p $MODPATH/system/bin
 mkdir -p $MODPATH/system/xbin
