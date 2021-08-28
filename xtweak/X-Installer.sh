@@ -2,15 +2,12 @@
 # XTweak 2021
 # FULLY MODIFIED BY LOOPER (iamlooper @ github)
 MODDIR=/data/adb/modules
+PATH=/data
 A=$(getprop ro.product.cpu.abi)
 if [ -e "/data/xtweak" ]; then
-    rm -Rf "/data/xtweak"
+    rm -rf "/data/xtweak"
+    mkdir -p "$PATH/xtweak"
 fi
-PATH=/data
-if [ ! -d $PATH/xtweak ]; then
- mkdir -p "$PATH/xtweak"
-fi
-XT=$PATH/xtweak
 function abort() {
   ui_print "$1"
   rm -Rf $MODPATH 2>/dev/null
@@ -18,7 +15,6 @@ function abort() {
   rm -Rf $TMPDIR 2>/dev/null
   exit 1
 }
-
 function make_dirs() {
 mkdir -p $MODPATH/system/bin
 mkdir -p $MODPATH/system/xbin
@@ -26,7 +22,6 @@ mkdir -p $MODPATH/bin
 mkdir -p $MODPATH/flags
 mkdir -p $MODPATH/script
 }
-
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
@@ -140,15 +135,10 @@ elif [[ "$(pm list package feravolt)" ]]; then
 ui_print "[*] FDE.AI App is present, uninstall it to prevent conflicts."
 fi
 # Unzipping
-unzip -o "$ZIPFILE" 'addon/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'system/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'bin/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'config/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'flags/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'injector/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'script/*' -d "$MODPATH" >&2
-unzip -o "$ZIPFILE" 'busybox/*' -d "$MODPATH" >&2
-
+zipout "addon/*" "$MODPATH"
+zipout "system/*" "$MODPATH"
+zipout "config/*" "$MODPATH"
+zipout "injector/*" "$MODPATH"
 # Make dirs
 make_dirs
 # Preparing test and rest settings
