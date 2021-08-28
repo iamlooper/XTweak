@@ -2,6 +2,7 @@
 # XTweak 2021
 # FULLY MODIFIED BY INFINITYLOOPER
 # SOME TEMPLATE STUFF BY Zackptg5
+SKIPUNZIP=1
 MODDIR=/data/adb/modules
 A=$(getprop ro.product.cpu.abi)
 if [ -e "/dev/XTweak" ]; then
