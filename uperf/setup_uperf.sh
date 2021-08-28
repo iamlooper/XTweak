@@ -5,7 +5,7 @@
 # Version: 20201129
 
 BASEDIR="$(dirname $(readlink -f "$0"))"
-USER_PATH="/dev/XTweak/uperf"
+USER_PATH="/data/xtweak/uperf"
 
 # $1:error_message
 _abort(){
@@ -39,7 +39,7 @@ _get_nr_core(){
 }
 
 _is_aarch64(){
-    if [ "$(getprop ro.product.cpu.abi)" == "arm64-v8a" ]; then
+    if [ "$(getprop ro.product.cpu.abi)" -eq "arm64-v8a" ]; then
         echo "true"
     else
         echo "false"
@@ -362,7 +362,7 @@ uperf_install(){
     local cfgname
     target="$(getprop ro.board.platform)"
     cfgname="$(_get_cfgname $target)"
-    if [ "$cfgname" == "unsupported" ]; then
+    if [ "$cfgname" -eq "unsupported" ]; then
         target="$(getprop ro.product.board)"
         cfgname="$(_get_cfgname $target)"
     fi
@@ -371,30 +371,28 @@ uperf_install(){
     if [ "$cfgname" != "unsupported" ] && [ -f $BASEDIR/config/$cfgname.json ]; then
         _setup_platform_file "$cfgname"
     else
-        echo "[*] $target not matching config files, uperf may not work."
+        echo "[*] Config files not present for ${target}, uperf may not work."
     fi
     _place_user_config
-    rm -rf $BASEDIR/config
+    rm -Rf $BASEDIR/config
 
-    if [ "$(_is_aarch64)" == "true" ]; then
+    if [ "$(_is_aarch64)" -eq "true" ]; then
         cp "$BASEDIR/uperf/aarch64/uperf" "$BASEDIR/bin"
     else
         cp "$BASEDIR/uperf/arm/uperf" "$BASEDIR/bin"
     fi
 
-    _set_perm_recursive $BASEDIR 0 0 0755 0644
-    _set_perm_recursive $BASEDIR/bin 0 0 0755 0755
-    rm -rf $BASEDIR/uperf
+    _set_perm_recursive "$BASEDIR" 0 0 0755 0644
+    _set_perm_recursive "$BASEDIR/bin" 0 0 0755 0755
+    rm -Rf $BASEDIR/uperf
 }
 
 injector_install(){
     echo "[*] Installing injector"
-    echo "[*] SELinux may be set PERMISSIVE for better compatibility"
-    echo "[*] To keep ENFORCING, please delete flags/allow_permissive"
 
     local src_path
     local dst_path
-    if [ "$(_is_aarch64)" == "true" ]; then
+    if [ "$(_is_aarch64)" -eq "true" ]; then
         src_path="$BASEDIR/injector/aarch64"
         dst_path="$BASEDIR/system/lib64"
     else
@@ -403,11 +401,11 @@ injector_install(){
     fi
 
     mkdir -p "$dst_path"
-    cp "$src_path/sfa_injector" "$BASEDIR/bin/"
+    cp "$src_path/sfa_injector" "$BASEDIR/bin"
     cp "$src_path/libsfanalysis.so" "$dst_path"
     _set_perm "$BASEDIR/bin/sfa_injector" 0 0 0755 u:object_r:system_file:s0
     _set_perm "$dst_path/libsfanalysis.so" 0 0 0644 u:object_r:system_lib_file:s0
-    rm -rf $BASEDIR/injector
+    rm -Rf $BASEDIR/injector
 }
 
 powerhal_stub_install(){
@@ -427,14 +425,14 @@ busybox_install(){
     dst_path="$BASEDIR/bin/busybox/"
 
     mkdir -p "$dst_path"
-    if [ "$(_is_aarch64)" == "true" ]; then
-        cp "$BASEDIR/busybox/busybox-arm64-selinux" "$dst_path/busybox"
+    if [ "$(_is_aarch64)" -eq "true" ]; then
+        wget -O "$dst_path/busybox/busybox-arm64-selinux" "https://github.com/iamlooper/XTweak/raw/main/uperf/busybox/busybox-arm64-selinux"
     else
-        cp "$BASEDIR/busybox/busybox-arm-selinux" "$dst_path/busybox"
+        wget -O "$dst_path/busybox/busybox-arm-selinux" "https://github.com/iamlooper/XTweak/raw/main/uperf/busybox/busybox-arm-selinux"
     fi
     chmod 0755 "$dst_path/busybox"
 
-    rm -rf $BASEDIR/busybox
+    rm -Rf $BASEDIR/busybox
 }
 
 # do all
