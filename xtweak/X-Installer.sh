@@ -160,7 +160,7 @@ ui_print "[*] Installing XTweak..."
 sleep 2
 mode_select
 # Exuecute setup_uperf.sh
-bash "$MODPATH"/setup_uperf.sh
+sh "$MODPATH"/setup_uperf.sh
 
 ui_print " --- Additional Notes --- "
 ui_print "[*] Reboot is required"
