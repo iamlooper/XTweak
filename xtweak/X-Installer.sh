@@ -1,7 +1,5 @@
 #!/system/bin/sh
 # XTweak 2021
-# Load util_functions to ensure working of various functions
-source "/data/adb/magisk/util_functions.sh"
 # Installer related vars and functions
 SKIPMOUNT=1
 MODDIR=/data/adb/modules
