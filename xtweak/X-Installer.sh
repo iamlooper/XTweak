@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # XTweak 2021
 # Installer related vars and functions
-SKIPMOUNT=1
+SKIPUNZIP=1
 MODDIR=/data/adb/modules
 PATH=/data
 if [ -e "/data/xtweak" ]; then
