@@ -5,7 +5,6 @@ source "/data/adb/magisk/util_functions.sh"
 # Installer related vars and functions
 MODDIR=/data/adb/modules
 PATH=/data
-A=$(getprop ro.product.cpu.abi)
 if [ -e "/data/xtweak" ]; then
     rm -rf "/data/xtweak"
     mkdir -p "$PATH/xtweak"
@@ -24,11 +23,11 @@ function set_permissions() {
   set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
 }
 function cleanup() {
-# Cleanup
 rm -rf $MODPATH/addon
 rm -rf $MODPATH/X-Installer.sh
 }
 function busybox_installer() {
+A=$(getprop ro.product.cpu.abi)
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
 
@@ -243,3 +242,7 @@ ui_print "[*] Contact @infinity_looper for direct support"
 sleep 2.5
 set_permissions
 }
+
+# Install
+X_Installer
+
