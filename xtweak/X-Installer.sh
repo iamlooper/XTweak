@@ -1,7 +1,6 @@
 #!/system/bin/sh
 # XTweak 2021
 # Installer related vars and functions
-SKIPUNZIP=1
 MODDIR=/data/adb/modules
 PATH=/data
 if [ -e "/data/xtweak" ]; then
@@ -159,6 +158,7 @@ sleep 0.1
 ui_print "[*] Installing XTweak..."
 sleep 2
 mode_select
+
 # Exuecute setup_uperf.sh
 sh "$MODPATH"/setup_uperf.sh
 
@@ -167,7 +167,7 @@ ui_print "[*] Reboot is required"
 ui_print "[*] Do not use XTweak with other optimizer modules"
 ui_print "[*] (su -c xmenu) to open XTweak Menu in Termux"
 ui_print "[*] Report issues to @tweak_projects_discuss on Telegram"
-ui_print "[*] Contact @infinity_looper for direct support"
+ui_print "[*] You can find me at iamlooper @ telegram for direct support"
 sleep 2.5
 set_permissions
 cleanup
@@ -241,7 +241,3 @@ killall -9 xauto >/dev/null 2>&1
 setprop persist.xtweak.mode "5" 2>/dev/null
 fi
 }
-
-# Install
-X_Installer
-
