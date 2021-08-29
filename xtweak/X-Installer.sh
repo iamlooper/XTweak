@@ -15,6 +15,12 @@ mkdir -p $MODPATH/bin
 mkdir -p $MODPATH/flags
 mkdir -p $MODPATH/script
 }
+function set_permissions() {
+  set_perm_recursive "$MODPATH" 0 0 0755 0644
+  set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
+}
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
 wget -O "$MODPATH/system/xbin/busybox8" "https://github.com/iamlooper/XTweak/raw/main/busybox/busybox8"
@@ -228,5 +234,6 @@ ui_print "[*] Do not use XTweak with other optimizer modules"
 ui_print "[*] (su -c xmenu) to open XTweak Menu in Termux"
 ui_print "[*] Report issues to @tweak_projects_discuss on Telegram"
 ui_print "[*] Contact @infinity_looper for direct support"
-sleep 4
+sleep 2.5
+set_permissions
 }
