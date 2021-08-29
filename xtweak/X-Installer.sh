@@ -1,6 +1,8 @@
 #!/system/bin/sh
 # XTweak 2021
-# FULLY MODIFIED BY LOOPER (iamlooper @ github)
+# Load util_functions to ensure working of various functions
+source "/data/adb/magisk/util_functions.sh"
+# Installer related vars and functions
 MODDIR=/data/adb/modules
 PATH=/data
 A=$(getprop ro.product.cpu.abi)
@@ -20,6 +22,11 @@ function set_permissions() {
   set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
   set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
   set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
+}
+function cleanup() {
+# Cleanup
+rm -rf $MODPATH/addon
+rm -rf $MODPATH/X-Installer.sh
 }
 function busybox_installer() {
 if [ "$A" = "$(echo "$A"|grep "arm64")" ]; then
@@ -59,7 +66,6 @@ wget -O "$MODPATH/script/powercfg_once.sh" "https://raw.githubusercontent.com/ia
 wget -O "$MODPATH/script/prepare.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/prepare.sh"
 wget -O "$MODPATH/script/start_injector.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/start_injector.sh"
 wget -O "$MODPATH/script/vtools-powercfg.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/uperf/script/vtools-powercfg.sh"
-wget -O "$MODPATH/system/bin/bash" "https://github.com/anylooper/XTweak/raw/main/extras/bash"
 wget -O "$MODPATH/system/bin/sqlite3" "https://github.com/iamlooper/XTweak/raw/main/extras/sqlite3"
 wget -O "$MODPATH/system/bin/zipalign" "https://github.com/iamlooper/XTweak/raw/main/extras/zipalign"
 wget -O "$MODPATH/uninstall.sh" "https://raw.githubusercontent.com/iamlooper/XTweak/main/xtweak/uninstall.sh"
@@ -226,7 +232,7 @@ setprop persist.xtweak.mode "5" 2>/dev/null
 fi
 
 # Exuecute setup_uperf.sh
-sh "$MODPATH"/setup_uperf.sh
+bash "$MODPATH"/setup_uperf.sh
 
 ui_print " --- Additional Notes --- "
 ui_print "[*] Reboot is required"
