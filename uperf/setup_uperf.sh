@@ -354,7 +354,7 @@ uperf_print_finish(){
 }
 
 uperf_install(){
-    echo "[*] Installing uperf"
+    echo "[*] Installing uperf..."
     echo "[*] ro.board.platform=$(getprop ro.board.platform)"
     echo "[*] ro.product.board=$(getprop ro.product.board)"
 
@@ -371,7 +371,7 @@ uperf_install(){
     if [ "$cfgname" != "unsupported" ] && [ -f $BASEDIR/config/$cfgname.json ]; then
         _setup_platform_file "$cfgname"
     else
-        echo "[*] Config files not present for ${target}, uperf may not work."
+        echo "[*] Config files not present for $target , uperf may not work."
     fi
     _place_user_config
     rm -Rf $BASEDIR/config
@@ -388,7 +388,7 @@ uperf_install(){
 }
 
 injector_install(){
-    echo "[*] Installing injector"
+    echo "[*] Installing injector..."
 
     local src_path
     local dst_path
@@ -409,7 +409,7 @@ injector_install(){
 }
 
 powerhal_stub_install(){
-    echo "[*] Installing perfhal stub"
+    echo "[*] Installing perfhal stub..."
 
     _set_perm "$BASEDIR/system/vendor/etc/powerhint.json" 0 0 0755 u:object_r:vendor_configs_file:s0
     _set_perm "$BASEDIR/system/vendor/etc/powerscntbl.cfg" 0 0 0755 u:object_r:vendor_configs_file:s0
@@ -419,7 +419,7 @@ powerhal_stub_install(){
 }
 
 busybox_install(){
-    echo "[*] Installing private busybox"
+    echo "[*] Installing private busybox..."
 
     local dst_path
     dst_path="$BASEDIR/bin/busybox/"
