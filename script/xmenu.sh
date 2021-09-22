@@ -172,7 +172,7 @@ _bash "$MODPATH/script/xmenu.sh"
 x_clean >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 _sleep 4
-xmenu
+_bash "$MODPATH/script/xmenu.sh"
 ;;
 7) echo -e $cyan "[*] Boosting RAM(Lite)..."
 _sync 
