@@ -5,15 +5,27 @@
 # Don't take any work from here until you maintain proper credits of respective devs.
 
 _cat(){
+if [[ -e "/system/bin/cat" ]]; then
 /system/bin/cat "$@"
+else
+/system/xbin/cat "$@"
+fi
 }
 
 _cut(){
+if [[ -e "/system/bin/cut" ]]; then
 /system/bin/cut "$@"
+else
+/system/xbin/cut "$@"
+fi
 }
 
 _dumpsys(){
+if [[ -e "/system/bin/dumpsys" ]]; then
 /system/bin/dumpsys "$@"
+else
+/system/xbin/dumpsys "$@"
+fi
 }
 
 _awk(){
@@ -25,39 +37,79 @@ fi
 }
 
 _getprop(){
+if [[ -e "/system/bin/getprop" ]]; then
 /system/bin/getprop "$@"
+else
+/system/xbin/getprop "$@"
+fi
 }
 
 _mkdir(){
+if [[ -e "/system/bin/mkdir" ]]; then
 /system/bin/mkdir "$@"
+else
+/system/xbin/mkdir "$@"
+fi
 }
 
 _grep(){
-/system/bin/grep "$@"
+if [[ -e "/system/bin/grep" ]]; then
+/system/bin/grep $@"
+else
+/system/xbin/grep "$@"
+fi
 }
 
 _bash(){
+if [[ -e "/system/bin/bash" ]]; then
 /system/bin/bash "$@"
+else
+/system/xbin/bash "$@"
+fi
 }
 
 _pgrep(){
+if [[ -e "/system/bin/pgrep" ]]; then
 /system/bin/pgrep "$@"
+else
+/system/xbin/pgrep "$@"
+fi
 }
 
 _setprop(){
+if [[ -e "/system/bin/setprop" ]]; then
 /system/bin/setprop "$@"
+else
+/system/xbin/setprop "$@"
+fi
 }
 
 _free(){
+if [[ -e "/system/bin/free" ]]; then
 /system/bin/free "$@"
+else
+/system/xbin/free "$@"
+fi
 }
 
 _sync(){
-/system/bin/sync
+if [[ -e "/system/bin/sync" ]]; then
+/system/bin/sync "$@"
+else
+/system/xbin/sync "$@"
+fi
 }
 
 _sleep(){
+if [[ -e "/system/bin/sleep" ]]; then
 /system/bin/sleep "$@"
+else
+/system/xbin/sleep "$@"
+fi
+}
+
+_busybox(){
+/data/adb/modules/xtweak/bin/busybox "$@"
 }
 
 MODPATH="/data/adb/modules/xtweak"
@@ -73,9 +125,9 @@ LOG="$PATH/XTweak/xtweak.log"
 
 # Fetch ram info
 _ram_info(){
-TOTAL_RAM=$(_free -m | awk '/Mem:/{print $2}')
+TOTAL_RAM=$(_busybox _free -m | awk '/Mem:/{print $2}')
 FULL_RAM=$((TOTAL_RAM * 20 / 100))
-AVAIL_RAM=$(_free -m | _awk '/Mem:/{print $7}')
+AVAIL_RAM=$(_busybox _free -m | _awk '/Mem:/{print $7}')
 }
 
 # Fetch battery status
