@@ -5,31 +5,59 @@
 # Don't take any work from here until you maintain proper credits of respective devs.
 
 _getprop(){
+if [[ -e "/system/bin/getprop" ]]; then
 /system/bin/getprop "$@"
+else
+/system/xbin/getprop "$@"
+fi
 }
 
 _mkdir(){
+if [[ -e "/system/bin/mkdir" ]]; then
 /system/bin/mkdir "$@"
+else
+/system/xbin/mkdir "$@"
+fi
 }
 
 _clear(){
-/system/bin/clear
+if [[ -e "/system/bin/clear" ]]; then
+/system/bin/clear "$@"
+else
+/system/xbin/clear "$@"
+fi
 }
 
 _grep(){
-/system/bin/grep "$@"
+if [[ -e "/system/bin/grep" ]]; then
+/system/bin/grep $@"
+else
+/system/xbin/grep "$@"
+fi
 }
 
 _sleep(){
+if [[ -e "/system/bin/sleep" ]]; then
 /system/bin/sleep "$@"
+else
+/system/xbin/sleep "$@"
+fi
 }
 
 _cat(){
+if [[ -e "/system/bin/cat" ]]; then
 /system/bin/cat "$@"
+else
+/system/xbin/cat "$@"
+fi
 }
 
 _uname(){
+if [[ -e "/system/bin/uname" ]]; then
 /system/bin/uname "$@"
+else
+/system/xbin/uname "$@"
+fi
 }
 
 _su(){
@@ -37,11 +65,19 @@ _su(){
 }
 
 _dumpsys(){
+if [[ -e "/system/bin/dumpsys" ]]; then
 /system/bin/dumpsys "$@"
+else
+/system/xbin/dumpsys "$@"
+fi
 }
 
 _rm(){
+if [[ -e "/system/bin/rm"  ]]; then
 /system/bin/rm "$@"
+else
+/system/xbin/rm "$@"
+fi
 }
 
 _awk(){
@@ -53,106 +89,174 @@ fi
 }
 
 _cut(){
+if [[ -e "/system/bin/cut" ]]; then
 /system/bin/cut "$@"
+else
+/system/xbin/cut "$@"
+fi
 }
 
 _free(){
+if [[ -e "/system/bin/free" ]]; then
 /system/bin/free "$@"
+else
+/system/xbin/free "$@"
+fi
 }
 
 _cp(){
+if [[ -e "/system/bin/cp" ]]; then
 /system/bin/cp "$@"
+else
+/system/xbin/cp "$@"
+fi
 }
 
 _touch(){
+if [[ -e "/system/bin/touch" ]]; then
 /system/bin/touch "$@"
+else
+/system/xbin/touch "$@"
+fi
 }
 
 _sed(){
+if [[ -e "/system/bin/sed" ]]; then
 /system/bin/sed "$@"
+else
+/system/xbin/sed "$@"
+fi
 }
 
 _date(){
-/system/bin/date
+if [[ -e "/system/bin/date" ]]; then
+/system/bin/date "$@"
+else
+/system/xbin/date "$@"
+fi
 }
 
 _chmod(){
+if [[ -e "/system/bin/chmod" ]]; then
 /system/bin/chmod "$@"
+else
+/system/xbin/chmod "$@"
+fi
 }
 
 _mv(){
+if [[ -e "/system/bin/mv" ]]; then
 /system/bin/mv "$@"
+else
+/system/xbin/mv "$@"
+fi
 }
 
 _sync(){
-/system/bin/sync
+if [[ -e "/system/bin/sync" ]]; then
+/system/bin/sync "$@"
+else
+/system/xbin/sync "$@"
+fi
 }
 
 _pgrep(){
+if [[ -e "/system/bin/pgrep" ]]; then
 /system/bin/pgrep "$@"
+else
+/system/xbin/pgrep "$@"
+fi
 }
 
 _setprop(){
+if [[ -e "/system/bin/setprop" ]]; then
 /system/bin/setprop "$@"
+else
+/system/xbin/setprop "$@"
+fi
 }
 
 _killall(){
+if [[ -e "/system/bin/killall" ]]; then
 /system/bin/killall "$@"
+else
+/system/xbin/killall"$@"
+fi
 }
 
 _kill(){
+if [[ -e "/system/bin/kill" ]]; then
 /system/bin/kill "$@"
+else
+/system/xbin/kill "$@"
+fi
 }
 
 _bash(){
+if [[ -e "/system/bin/bash" ]]; then
 /system/bin/bash "$@"
+else
+/system/xbin/bash "$@"
+fi
 }
 
 _am(){
+if [[ -e "/system/bin/am" ]]; then
 /system/bin/am "$@"
+else
+/system/xbin/am "$@"
+fi
 }
 
 _pm(){
+if [[ -e "/system/bin/pm" ]]; then
 /system/bin/pm "$@"
-}
-
-_setsid(){
-/system/bin/setsid "$@"
+else
+/system/xbin/pm "$@"
+fi
 }
 
 _sqlite3(){
-/system/xbin/sqlite3 "$@"
+/data/adb/modules/xtweak/bin/sqlite3 "$@"
 }
 
 _zipalign(){
-/system/bin/zipalign "$@"
+/data/adb/modules/xtweak/bin/zipalign "$@"
 }
 
 _mount(){
+if [[ -e "/system/bin/mount" ]]; then
 /system/bin/mount "$@"
-}
-
-_ps(){
-/system/bin/ps "$@"
+else
+/system/xbin/mount "$@"
+fi
 }
 
 _find(){
+if [[ -e "/system/bin/find" ]]; then
 /system/bin/find "$@"
+else
+/system/xbin/find "$@"
+fi
 }
 
 _wc(){
+if [[ -e "/system/bin/wc" ]]; then
 /system/bin/wc "$@"
+else
+/system/xbin/wc "$@"
+fi
 }
 
-_pkill(){
-/system/bin/pkill "$@"
+_busybox(){
+/data/adb/modules/xtweak/bin/busybox "$@"
 }
 
 # Fetch ram info
 _ram_info(){
-TOTAL_RAM=$(_free -m | awk '/Mem:/{print $2}')
+TOTAL_RAM=$(_busybox _free -m | awk '/Mem:/{print $2}')
 FULL_RAM=$((TOTAL_RAM * 20 / 100))
-AVAIL_RAM=$(_free -m | _awk '/Mem:/{print $7}')
+AVAIL_RAM=$(_busybox _free -m | _awk '/Mem:/{print $7}')
 }
 
 # Fetch battery status
