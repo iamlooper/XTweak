@@ -1,7 +1,7 @@
 #!/system/bin/sh
 # XTweak 2021
 # Sleep until boot completed
-until [[ "$(getprop sys.boot_completed)" == "1" ]] || [[ "$(getprop dev.bootcomplete)" == "1" ]]
+until [ "$(getprop sys.boot_completed)" = "1" ] || [ "$(getprop dev.bootcomplete)" = "1" ]
 do
        sleep 1
 done

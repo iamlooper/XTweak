@@ -1,3 +1,4 @@
+#!/sbin/sh
 ###########################
 # MMT - BOURNE SETUP SCRIPT
 ###########################
@@ -193,7 +194,6 @@ sleep 4
 set_permissions() {
   set_perm_recursive "$MODPATH" 0 0 0755 0644
   set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
-  set_perm_recursive "$MODPATH/system/xbin" 0 0 0755 0755
   set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
   set_perm_recursive "$MODPATH/script" 0 0 0755 0755
   set_perm_recursive "$MODPATH/bin" 0 0 0755 0755
