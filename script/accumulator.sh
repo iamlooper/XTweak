@@ -93,7 +93,7 @@ do
         write "${cpu}schedutil/down_rate_limit_us" "5000"
         write "${cpu}schedutil/rate_limit_us" "5000"
         write "${cpu}schedutil/hispeed_load" "99"
-        write "${cpu}schedutil/hispeed_freq" "$(_cut "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$(_cat "${cpu}cpuinfo_max_freq")"
     elif [[ "$avail_govs" == *"interactive"* ]]
     then
         write "${cpu}scaling_governor" "interactive"
@@ -142,9 +142,10 @@ done
 write "$SCHED_FEATURES" "NO_NEXT_BUDDY"
 write "$SCHED_FEATURES" "TTWU_QUEUE"
 write "$SCHED_FEATURES" "NO_GENTLE_FAIR_SLEEPERS"
+write "$SCHED_FEATURES" "NO_NEW_FAIR_SLEEPERS"
 write "$SCHED_FEATURES" "EAS_PREFER_IDLE"
-write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
 write "$SCHED_FEATURES" "ENERGY_AWARE"
+write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
 
 # Blkio Tweaks
 write "/dev/blkio/blkio.weight" "1000"
