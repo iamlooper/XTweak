@@ -7,7 +7,7 @@
 MODPATH="/data/adb/modules/xtweak"
 
 # Load utility lib
-source "$MODPATH/script/xtweak_utility.sh"
+source "${MODPATH}/script/xtweak_utility.sh"
 
 # Main Variables
 KERNEL="/proc/sys/kernel"
@@ -105,6 +105,7 @@ do
 done
 
 # GPU Tweaks
+write "/sys/module/simple_gpu_algorithm/parameters/simple_gpu_activate" "1"
 write "/sys/class/kgsl/kgsl-3d0/devfreq/polling_interval" "5"
 write "/sys/class/kgsl/kgsl-3d0/idle_timer" "10000000"
 write "/sys/class/kgsl/kgsl-3d0/force_clk_on" "1"
@@ -146,6 +147,7 @@ write "$SCHED_FEATURES" "NO_NEXT_BUDDY"
 write "$SCHED_FEATURES" "TTWU_QUEUE"
 write "$SCHED_FEATURES" "NO_GENTLE_FAIR_SLEEPERS"
 write "$SCHED_FEATURES" "NO_NEW_FAIR_SLEEPERS"
+write "$SCHED_FEATURES" "ARCH_POWER"
 write "$SCHED_FEATURES" "EAS_PREFER_IDLE"
 write "$SCHED_FEATURES" "ENERGY_AWARE"
 write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
@@ -158,6 +160,11 @@ write "${ufs}clkgate_enable" "0"
 write "${ufs}hibern8_on_idle_enable" "0"
 done
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "Y"
+
+# Multi-core powersaving
+if [[ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]]; then
+write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
+fi
 
 # Tune raid speed limit
 write "$RAID/speed_limit_max" "14000"

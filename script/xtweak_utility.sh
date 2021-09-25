@@ -4,11 +4,23 @@
 # Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
 # Don't take any work from here until you maintain proper credits of respective devs.
 
+##############################
+# Basic Tool Functions
+###############################
+
 _getprop(){
 if [[ -e "/system/bin/getprop" ]]; then
 /system/bin/getprop "$@"
 else
 /system/xbin/getprop "$@"
+fi
+}
+
+_resetprop(){
+if [[ -e "/system/bin/resetprop" ]]; then
+/system/bin/resetprop "$@"
+else
+/system/xbin/resetprop "$@"
 fi
 }
 
@@ -249,8 +261,12 @@ fi
 }
 
 _busybox(){
-/data/adb/modules/xtweak/bin/busybox "$@"
+/data/adb/magisk/busybox "$@"
 }
+
+##############################
+# Device Info Functions
+###############################
 
 # Fetch ram info
 _ram_info(){
@@ -358,6 +374,10 @@ CODENAME=$(_grep codeName= "$MODPATH/module.prop" | _sed "s/codeName=//")
 STATUS=$(_grep Status= "$MODPATH/module.prop" | _sed "s/Status=//")
 AUTHOR=$(_grep author= "$MODPATH/module.prop" | _sed "s/author=//")
 
+##############################
+# Logging System Functions
+###############################
+
 # Logging system header
 _sleep 4
 _awk '{print}' "$MODPATH"/xtweak_banner >> $LOG
@@ -415,7 +435,10 @@ echo "[*] ENDED TWEAKS AT $(_date) " >> $LOG
 echo "" >> $LOG
 }
 
-# SQLite optimization 
+##############################
+# Sqlite Optimization Function
+###############################
+
 x_sqlite(){
 SQ_LOG="/storage/emulated/0/XTweak/sqlite.log"
 if [[ -f "$SQ_LOG" ]]; then
@@ -449,7 +472,10 @@ echo -e "[*] Database $i: VACUUM=$resVac REINDEX=$resIndex ANALYZE=$resAnlz" >> 
 done
 }
 
-# Zipalign optimization 
+##############################
+# Zipalign Optimization Function
+############################### 
+
 x_zipalign(){
 ZA_LOG="/storage/emulated/0/XTweak/zipalign.log"
 ZA_DB="/storage/emulated/0/XTweak/zipalign.db"
@@ -484,7 +510,10 @@ do
 done
 }
 
-# Junk cleaning 
+##############################
+# Junk Cleaning Function
+###############################
+
 x_clean(){
 _rm -rf /data/*.log
 _rm -rf /data/vendor/wlan_logs 
@@ -526,7 +555,10 @@ _rm -rf /sdcard/DkMiBrowserDemo
 _rm -rf /sdcard/.xlDownload 
 }
 
-# Doze
+##############################
+# Doze Function
+###############################
+
 x_doze(){
 # Stop certain services and restart it on boot
 if [[ "$(busybox pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | _wc -l)" == "1" ]]; then
@@ -580,7 +612,10 @@ settings delete global device_idle_constants
 settings put global device_idle_constants inactive_to=60000,sensing_to=0,locating_to=0,location_accuracy=2000,motion_inactive_to=0,idle_after_inactive_to=0,idle_pending_to=60000,max_idle_pending_to=120000,idle_pending_factor=2.0,idle_to=900000,max_idle_to=21600000,idle_factor=2.0,max_temp_app_whitelist_duration=60000,mms_temp_app_whitelist_duration=30000,sms_temp_app_whitelist_duration=20000,light_after_inactive_to=10000,light_pre_idle_to=60000,light_idle_to=180000,light_idle_factor=2.0,light_max_idle_to=900000,light_idle_maintenance_min_budget=30000,light_idle_maintenance_max_budget=60000
 }
 
-# Cgroup optimization
+###############################
+# Cgroup Optimization Functions
+###############################
+
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_task_cgroup(){
     local comm
@@ -824,4 +859,88 @@ change_task_high_prio "zygote|usap"
 # busybox fork from magiskd
 pin_proc_on_mid "magiskd"
 change_task_nice "magiskd" "19"
+}
+
+##############################
+# HWUI Optimization Function
+###############################
+
+x_hwui(){
+if [[ "$TOTAL_RAM" -lt 3072 ]]; then
+_resetprop hwui.use_gpu_pixel_buffers false
+_resetprop debug.hwui.use_buffer_age false
+_resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100 / 2))
+_resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100 / 2))
+_resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100 / 2))
+_resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100 / 2))
+_resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100 / 2))
+_resetprop ro.hwui.texture_cache_flushrate 0.3
+_resetprop ro.hwui.gradient_cache_size 1
+_resetprop ro.hwui.text_small_cache_width 1024
+_resetprop ro.hwui.text_small_cache_height 1024
+_resetprop ro.hwui.text_large_cache_width 2048
+_resetprop ro.hwui.text_large_cache_height 1024
+else
+_resetprop hwui.use_gpu_pixel_buffers false
+_resetprop debug.hwui.use_buffer_age false
+_resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100))
+_resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100))
+_resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100))
+_resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100))
+_resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100))
+_resetprop ro.hwui.texture_cache_flushrate 0.3
+_resetprop ro.hwui.gradient_cache_size 1
+_resetprop ro.hwui.text_small_cache_width 1024
+_resetprop ro.hwui.text_small_cache_height 1024
+_resetprop ro.hwui.text_large_cache_width 2048
+_resetprop ro.hwui.text_large_cache_height 1024
+fi
+}
+
+##############################
+# Net Optimization Function
+###############################
+
+x_net(){
+write "/proc/sys/net/ipv4/conf/default/secure_redirects" "0"
+write "/proc/sys/net/ipv4/conf/default/accept_redirects" "0"
+write "/proc/sys/net/ipv4/conf/default/accept_source_route" "0"
+write "/proc/sys/net/ipv4/conf/all/secure_redirects" "0"
+write "/proc/sys/net/ipv4/conf/all/accept_redirects" "0"
+write "/proc/sys/net/ipv4/conf/all/accept_source_route" "0"
+write "/proc/sys/net/ipv4/ip_forward" "0"
+write "/proc/sys/net/ipv4/ip_dynaddr" "0"
+write "/proc/sys/net/ipv4/ip_no_pmtu_disc" "0"
+write "/proc/sys/net/ipv4/tcp_ecn" "0"
+write "/proc/sys/net/ipv4/tcp_timestamps" "0"
+write "/proc/sys/net/ipv4/tcp_tw_reuse" "1"
+write "/proc/sys/net/ipv4/tcp_fack" "1"
+write "/proc/sys/net/ipv4/tcp_sack" "1"
+write "/proc/sys/net/ipv4/tcp_dsack" "1"
+write "/proc/sys/net/ipv4/tcp_rfc1337" "1"
+write "/proc/sys/net/ipv4/tcp_tw_recycle" "1"
+write "/proc/sys/net/ipv4/tcp_window_scaling" "1"
+write "/proc/sys/net/ipv4/tcp_moderate_rcvbuf" "1"
+write "/proc/sys/net/ipv4/tcp_no_metrics_save" "1"
+write "/proc/sys/net/ipv4/tcp_synack_retries" "2"
+write "/proc/sys/net/ipv4/tcp_syn_retries" "2"
+write "/proc/sys/net/ipv4/tcp_keepalive_probes" "5"
+write "/proc/sys/net/ipv4/tcp_fin_timeout" "30"
+write "/proc/sys/net/core/rmem_max" "261120"
+write "/proc/sys/net/core/wmem_max" "261120"
+write "/proc/sys/net/core/rmem_default" "261120"
+write "/proc/sys/net/core/wmem_default" "261120"
+write "/proc/sys/net/core/netdev_max_backlog" "128"
+write "/proc/sys/net/core/netdev_tstamp_prequeue" "0"
+write "/proc/sys/net/ipv4/cipso_cache_bucket_size" "0"
+write "/proc/sys/net/ipv4/cipso_cache_enable" "0"
+write "/proc/sys/net/ipv4/cipso_rbm_strictvalid" "0"
+write "/proc/sys/net/ipv4/igmp_link_local_mcast_reports" "0"
+write "/proc/sys/net/ipv4/ipfrag_time" "24"
+write "/proc/sys/net/ipv4/tcp_fwmark_accept" "0"
+write "/proc/sys/net/ipv4/tcp_keepalive_intvl" "320"
+write "/proc/sys/net/ipv4/tcp_keepalive_time" "21600"
+write "/proc/sys/net/ipv4/tcp_probe_interval" "1800"
+write "/proc/sys/net/ipv4/tcp_slow_start_after_idle" "0"
+write "/proc/sys/net/ipv6/ip6frag_time" "48"
 }
