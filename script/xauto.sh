@@ -54,7 +54,7 @@ fi
 
 _grep(){
 if [[ -e "/system/bin/grep" ]]; then
-/system/bin/grep $@"
+/system/bin/grep "$@"
 else
 /system/xbin/grep "$@"
 fi
@@ -115,8 +115,8 @@ _busybox(){
 MODPATH="/data/adb/modules/xtweak"
 
 # Main Variables
-toptsdir=/dev/stune/top-app/tasks
-toptcdir=/dev/cpuset/top-app/tasks
+toptsdir="/dev/stune/top-app/tasks"
+toptcdir="/dev/cpuset/top-app/tasks"
 PATH="/storage/emulated/0"
 if [[ ! -d "$PATH/XTweak" ]]; then 
 _mkdir "$PATH/XTweak"
@@ -161,8 +161,7 @@ SCRN_ON=0
 fi
 }
 
-while true
-do
+while true; do
     # Check screen state
     _screen_state
     if [[ "$(cat /sys/class/leds/lcd-backlight/brightness)" == "0" ]] || [[ "$(cat /sys/class/backlight/panel*-backlight/brightness)" == "0" ]] || [[ "$SCRN_ON" == "0" ]]; then    
@@ -194,7 +193,7 @@ do
     if [[ "$AVAIL_RAM" -le "$FULL_RAM" ]]; then
     echo "[*] RAM is full, cleared RAM caches." >> $LOG
     _sync
-    echo "3" > /proc/sys/vm/drop_caches
+    echo "3" > "/proc/sys/vm/drop_caches"
     fi
     # Check for running games
     for gpid in $(_pgrep -f netease) $(_pgrep -f tipsworks) $(_pgrep -f studiowildcard) $(_pgrep -f wardrumstudios) $(_pgrep -f ExiliumGames) $(_pgrep -f com2us) $(_pgrep -f zuuks) $(_pgrep -f junegaming) $(_pgrep -f pixelbite) $(_pgrep -f junesoftware) $(_pgrep -f sozap) $(_pgrep -f dotemu) $(_pgrep -f playables) $(_pgrep -f playrisedigital) $(_pgrep -f rockstar) $(_pgrep -f blackpanther) $(_pgrep -f noodlecake) $(_pgrep -f linegames) $(_pgrep -f kleientertainment) $(_pgrep -f agaming) $(_pgrep -f generagames) $(_pgrep -f astragon) $(_pgrep -f chucklefish) $(_pgrep -f t2kgames) $(_pgrep -f t2ksports) $(_pgrep -f turner) $(_pgrep -f uplayonline) $(_pgrep -f pubg) $(_pgrep -f dreamotion) $(_pgrep -f snailgames) $(_pgrep -f dexintgames) $(_pgrep -f haegin) $(_pgrep -f panzerdog) $(_pgrep -f igg) $(_pgrep -f gtarcade) $(_pgrep -f naxon) $(_pgrep -f mame4droid) $(_pgrep -f kakaogames) $(_pgrep -f telltalegames) $(_pgrep -f seleuco) $(_pgrep -f innersloth) $(_pgrep -f kiloo) $(_pgrep -f imaginalis) $(_pgrep -f refuelgames) $(_pgrep -f scottgames) $(_pgrep -f clickteam) $(_pgrep -f minigames) $(_pgrep -f headupgames) $(_pgrep -f mobigames) $(_pgrep -f callofduty) $(_pgrep -f ubisoft) $(_pgrep -f ppsspp) $(_pgrep -f cf) $(_pgrep -f feralinteractive) $(_pgrep -f riotgames) $(_pgrep -f playgendary) $(_pgrep -f joymax) $(_pgrep -f deadeffect) $(_pgrep -f blackdesertm) $(_pgrep -f firsttouchgames) $(_pgrep -f standoff2) $(_pgrep -f criticalops) $(_pgrep -f wolvesinteractive) $(_pgrep -f gamedevltd) $(_pgrep -f mojang) $(_pgrep -f miHoYo) $(_pgrep -f miniclip) $(_pgrep -f moontoon) $(_pgrep -f gameloft) $(_pgrep -f netmarble) $(_pgrep -f yoozoogames) $(_pgrep -f eyougame) $(_pgrep -f asphalt) $(_pgrep -f dhlove) $(_pgrep -f fifamobile) $(_pgrep -f freefireth) $(_pgrep -f activision) $(_pgrep -f konami) $(_pgrep -f gamevil) $(_pgrep -f pixonic) $(_pgrep -f gameparadiso) $(_pgrep -f wargaming) $(_pgrep -f madfingergames) $(_pgrep -f supercell) $(_pgrep -f allstar) $(_pgrep -f garena) $(_pgrep -f ea.gp) $(_pgrep -f pixel.gun3d) $(_pgrep -f titan.cd) $(_pgrep -f rpg.fog) $(_pgrep -f edkongames) $(_pgrep -f ohbibi) $(_pgrep -f apex_designs) $(_pgrep -f roblox) $(_pgrep -f halfbrick) $(_pgrep -f maxgames) $(_pgrep -f wildlife.games) $(_pgrep -f blizzard); do

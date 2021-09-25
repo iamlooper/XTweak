@@ -30,7 +30,7 @@ fi
 
 _grep(){
 if [[ -e "/system/bin/grep" ]]; then
-/system/bin/grep $@"
+/system/bin/grep "$@"
 else
 /system/xbin/grep "$@"
 fi

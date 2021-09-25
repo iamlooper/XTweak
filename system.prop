@@ -58,3 +58,6 @@ ro.hwui.text_large_cache_height=1024
 ro.hwui.texture_cache_size=84
 ro.hwui.layer_cache_size=64
 ro.hwui.path_cache_size=32
+
+# Enable zygote pre-forking
+persist.device_config.runtime_native.usap_pool_enabled=true
