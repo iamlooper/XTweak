@@ -227,9 +227,9 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-if [[ -e "/system/etc/sysctl.conf" ]]; then
-  _mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
-fi
+#if [[ -e "/system/etc/sysctl.conf" ]]; then
+#  _mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
+#fi
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
