@@ -109,7 +109,7 @@ fi
 }
 
 _busybox(){
-/data/adb/modules/xtweak/bin/busybox "$@"
+/data/adb/magisk/busybox "$@"
 }
 
 MODPATH="/data/adb/modules/xtweak"
