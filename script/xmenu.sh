@@ -121,48 +121,48 @@ read character
 case $character in
 1) echo -e $cyan "[*] Appying Auto X..." 
 $setprop persist.xtweak.mode "1" 2>/dev/null
-sh "$MODPATH/script/xtweak.sh" >/dev/null 2>&1
+$sh "$MODPATH/script/xtweak.sh" >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 2) echo -e $cyan "[*] Appying Accumulator..." 
 $setprop persist.xtweak.mode "2" 2>/dev/null
 logging_system >/dev/null 2>&1
-sh "$MODPATH/script/accumulator.sh" >/dev/null 2>&1
+$sh "$MODPATH/script/accumulator.sh" >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 3) echo -e $cyan "[*] Applying Equalizer..." 
 $setprop persist.xtweak.mode "3" 2>/dev/null
 logging_system >/dev/null 2>&1
-sh "$MODPATH/script/equalizer.sh" >/dev/null 2>&1
+$sh "$MODPATH/script/equalizer.sh" >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 4) echo -e $cyan "[*] Applying Potency..." 
 $setprop persist.xtweak.mode "4" 2>/dev/null
 logging_system >/dev/null 2>&1
-sh "$MODPATH/script/potency.sh" >/dev/null 2>&1
+$sh "$MODPATH/script/potency.sh" >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 5) echo -e $cyan "[*] Applying Output..." 
 $setprop persist.xtweak.mode "5" 2>/dev/null
 logging_system >/dev/null 2>&1
-sh "$MODPATH/script/output.sh" >/dev/null 2>&1
+$sh "$MODPATH/script/output.sh" >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 6) echo -e $cyan "[*] Cleaning junk..."
 x_clean >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 7) echo -e $cyan "[*] Boosting RAM..."
 $sync 
@@ -180,31 +180,31 @@ $am force-stop com.google.android.inputmethod.latin 2>/dev/null
 $am force-stop com.termoneplus 2>/dev/null
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 8) echo -e $cyan "[*] Applying sqlite opt..." 
 x_sqlite &>/dev/null
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 9) echo -e $cyan "[*] Applying zipalign opt..." 
 x_zipalign >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 10) echo -e $cyan "[*] Applying cgroup opt..." 
 x_cgroup >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 11) echo -e $cyan "[*] Applying doze opt..." 
 x_doze >/dev/null 2>&1
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 12) echo -e $cyan "[*] FS-Trimming partitions..." 
 fstrim -v /cache 2>/dev/null
@@ -212,7 +212,7 @@ fstrim -v /data 2>/dev/null
 fstrim -v /system 2>/dev/null
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 13) echo -e $cyan "[*] Disabling thermal..." 
 stop thermal 2>/dev/null
@@ -224,7 +224,7 @@ stop thermanager 2>/dev/null
 stop thermal_manager 2>/dev/null
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 14) echo -e $cyan "[*] Enabling thermal..."
 start thermal 2>/dev/null
@@ -236,7 +236,7 @@ start thermanager 2>/dev/null
 start thermal_manager 2>/dev/null
 echo -e $cyan "[*] Done!"
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 0) echo -e $cyan "[*] Hope to see you again, bye"
 $sleep 2.5
@@ -244,7 +244,7 @@ exit 0
 ;;
 *) echo -e $red "[*] Response error, opening menu again..."
 $sleep 2.5
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
 ;;
 esac
 

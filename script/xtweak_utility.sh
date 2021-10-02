@@ -252,6 +252,12 @@ else
 setsid="/system/xbin/setsid"
 fi
 
+if [ -e "/system/bin/sh" ]; then
+sh="/system/bin/sh"
+else
+sh="/system/xbin/sh"
+fi
+
 su="/data/adb/modules/xtweak/bin/su"
 
 sqlite="/data/adb/modules/xtweak/bin/sqlite3"

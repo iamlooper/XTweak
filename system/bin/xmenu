@@ -4,7 +4,13 @@
 # Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
 # Don't take any work from here until you maintain proper credits of respective devs.
 
+if [ -e "/system/bin/sh" ]; then
+sh="/system/bin/sh"
+else
+sh="/system/xbin/sh"
+fi
+
 MODPATH="/data/adb/modules/xtweak"
 
 # Exuecute main
-sh "$MODPATH/script/xmenu.sh"
+$sh "$MODPATH/script/xmenu.sh"
