@@ -1,4 +1,4 @@
-#!/system/bin/bash
+#!/system/bin/sh
 # XTweak Output Script
 # Author: LOOPER (iamlooper @ github)
 # Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
@@ -7,38 +7,11 @@
 MODPATH="/data/adb/modules/xtweak"
 
 # Load utility lib
-source "${MODPATH}/script/xtweak_utility.sh"
-
-# Main Variables
-KERNEL="/proc/sys/kernel"
-VM="/proc/sys/vm"
-SCHED_FEATURES="/sys/kernel/debug/sched_features"
-RAID="/proc/sys/dev/raid"
-PTY="/proc/sys/kernel/pty"
-KEYS="/proc/sys/kernel/keys"
-FS="/proc/sys/fs"
-LMK="/sys/module/lowmemorykiller/parameters"
-
-write(){
-	# Bail out if file does not exist
-	[[ ! -f "$1" ]] && return 1
-
-	# Make file read-able and write-able in case it is not already
-	_chmod +rw "$1" 2>/dev/null
-
-	# Write the new value and bail if there's an error
-	if ! echo "$2" > "$1" 2>/dev/null
-	then
-		echo "[!] Failed: $1 → $2"
-		return 1
-	fi
-
-	# Log the success
-	echo "[*] $1 → $2"
-}
+. "$MODPATH/script/xtweak_utility.sh"
+$sleep 1
 
 # Always sync data
-_sync 
+$sync 
 
 # Kernel Tweaks
 write "$KERNEL/perf_cpu_time_max_percent" "20"
@@ -86,22 +59,22 @@ write "$VM/memory_plus" "0"
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$(_cat "${cpu}scaling_available_governors")"
-    if [[ "$avail_govs" == *"schedutil"* ]]
+    avail_govs="$($cat "${cpu}scaling_available_governors")"
+    if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
         write "${cpu}schedutil/up_rate_limit_us" "10000"
         write "${cpu}schedutil/down_rate_limit_us" "40000"
         write "${cpu}schedutil/rate_limit_us" "10000"
         write "${cpu}schedutil/hispeed_load" "85"
-        write "${cpu}schedutil/hispeed_freq" "$(_cat "${cpu}cpuinfo_max_freq")"
-    elif [[ "$avail_govs" == *"interactive"* ]]
+        write "${cpu}schedutil/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+    elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
         write "${cpu}interactive/timer_rate" "10000"
         write "${cpu}interactive/min_sample_time" "10000"
         write "${cpu}interactive/go_hispeed_load" "85"
-        write "${cpu}interactive/hispeed_freq" "$(_cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
     fi
 done
 
@@ -163,7 +136,7 @@ done
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "Y"
 
 # Multi-core powersaving
-if [[ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]]; then
+if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
 write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
 fi
 
@@ -192,11 +165,6 @@ write "/dev/blkio/blkio.weight" "1000"
 write "/dev/blkio/blkio.leaf_weight" "1000"
 write "/dev/blkio/background/blkio.weight" "100"
 write "/dev/blkio/background/blkio.leaf_weight" "100"
-
-# Fstrim partitions
-fstrim -v /cache
-fstrim -v /data
-fstrim -v /system
 
 # App launch boost tweak
 write "/sys/module/boost_control/parameters/app_launch_boost_ms" "500"
@@ -228,8 +196,8 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-#if [[ -e "/system/etc/sysctl.conf" ]]; then
-#  _mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
+#if [ -e "/system/etc/sysctl.conf" ]; then
+#  $mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
 #fi
 
 # Tune pm_freeze_timeout for kernel
@@ -254,7 +222,7 @@ write "/sys/module/memplus_core/parameters/memory_plus_enabled" "0"
 # Disable rmnet and gpu logging levels
 write "/d/tracing/tracing_on" "0"
 write "/sys/module/rmnet_data/parameters/rmnet_data_log_level" "0"
-if [[ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]]; then
+if [ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]; then
 write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" "0"
 write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_ctxt" "0"
 write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_drv" "0"
@@ -298,46 +266,46 @@ write "/sys/module/printk/parameters/pid" "N"
 write "/sys/module/printk/parameters/time" "N"
 write "/sys/module/service_locator/parameters/enable" "0"
 write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
-for i in $(find /sys/ -name pm_qos_enable); do
+for i in $($find /sys/ -name pm_qos_enable); do
 write "${i}" "1"
 done
-for i in $(find /sys/ -name debug_mask); do
+for i in $($find /sys/ -name debug_mask); do
 write "${i}" "0"
 done
-for i in $(find /sys/ -name debug_level); do
+for i in $($find /sys/ -name debug_level); do
 write "${i}" "0"
 done
-for i in $(find /sys/ -name edac_mc_log_ce); do
+for i in $($find /sys/ -name edac_mc_log_ce); do
 write "${i}" "0"
 done
-for i in $(find /sys/ -name edac_mc_log_ue); do
+for i in $($find /sys/ -name edac_mc_log_ue); do
 write "${i}" "0"
 done
-for i in $(find /sys/ -name enable_event_log); do
+for i in $($find /sys/ -name enable_event_log); do
 write "${i}" "0"
 done
-for i in $(find /sys/ -name log_ecn_error); do
+for i in $($find /sys/ -name log_ecn_error); do
 write "${i}" "0"
 done
-for i in $(find /sys/ -name snapshot_crashdumper); do
+for i in $($find /sys/ -name snapshot_crashdumper); do
 write "${i}" "0"
 done
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
-resetprop ro.config.uksm.support false
+$resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
-resetprop ro.config.ksm.support false
+$resetprop ro.config.ksm.support false
 
 # EXT4 and F2FS Tweaks
-for ext4 in $(_cat /proc/mounts | _grep ext4 | _cut -d ' ' -f2); do
-_mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do
+$mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 done
-for ext4 in $(_cat /proc/mounts | _grep ext4 | _cut -d ' ' -f2); do 
-_mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do 
+$mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 done
-for f2fs in $(_cat /proc/mounts | _grep f2fs | _cut -d ' ' -f2); do 
-_mount -o remount,nobarrier ${f2fs}
+for f2fs in $($cat /proc/mounts | $grep f2fs | $cut -d ' ' -f2); do 
+$mount -o remount,nobarrier ${f2fs}
 done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -361,8 +329,8 @@ done
 
 # Stopping various sevices
 for v in 0 1 2 3 4; do
-    stop vendor.qti.hardware.perf@$v.$v-service 2>/dev/null
-    stop perf-hal-$v-$v 2>/dev/null
+    stop vendor.qti.hardware.perf@${v}.${v}-service 2>/dev/null
+    stop perf-hal-${v}-${v} 2>/dev/null
 done
 stop mpdecision 2>/dev/null
 stop vendor.perfservice 2>/dev/null
@@ -379,10 +347,10 @@ stop perfd 2>/dev/null
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$(_cat "${queue}scheduler")
+    avail_scheds=$($cat "${queue}scheduler")
 	for sched in cfq deadline anxiety noop kyber none
 	do
-		if [[ "$avail_scheds" == *"$sched"* ]]; then
+		if [ "$avail_scheds" = *"$sched"* ]; then
 			write "${queue}scheduler" "$sched"
 			break
 		fi

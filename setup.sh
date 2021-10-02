@@ -37,6 +37,10 @@ ui_print "[⚡] UNIVERSAL POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡]"
 
 # Default extraction path is to $MODPATH. Change the logic to whatever you want.
 install_module() {
+# Remove old XTweak dir
+rm -rf "/storage/emulated/0/XTweak"
+mkdir -p "/storage/emulated/0/XTweak"
+
 # Unzip
 unzip -o "$ZIPFILE" 'addon/*' -d $TMPDIR >&2
 unzip -o "$ZIPFILE" 'system/*' -d $MODPATH >&2
@@ -158,24 +162,24 @@ esac
 
 ui_print "[*] Selected: $FCTEXTAD1 "
 
-if [[ "$FCTEXTAD1" == "AutoX" ]]; then
-echo "off" > "/storage/emulated/0/XTweak/xauto.txt"
+if [ "$FCTEXTAD1" = "AutoX" ]; then
+echo "off" > "/data/xauto.txt"
 setprop persist.xtweak.mode "1" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Accumulator" ]]; then
-echo "off" > "/storage/emulated/0/XTweak/xauto.txt"
+elif [ "$FCTEXTAD1" = "Accumulator" ]; then
+echo "off" > "/data/xauto.txt"
 setprop persist.xtweak.mode "2" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Equalizer" ]]; then
-echo "off" > "/storage/emulated/0/XTweak/xauto.txt"
+elif [ "$FCTEXTAD1" = "Equalizer" ]; then
+echo "off" > "/data/xauto.txt"
 setprop persist.xtweak.mode "3" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Potency" ]]; then
-echo "off" > "/storage/emulated/0/XTweak/xauto.txt"
+elif [ "$FCTEXTAD1" = "Potency" ]; then
+echo "off" > "/data/xauto.txt"
 setprop persist.xtweak.mode "4" 2>/dev/null
 
-elif [[ "$FCTEXTAD1" == "Output" ]]; then
-echo "off" > "/storage/emulated/0/XTweak/xauto.txt"
+elif [ "$FCTEXTAD1" = "Output" ]; then
+echo "off" > "/data/xauto.txt"
 setprop persist.xtweak.mode "5" 2>/dev/null
 fi
 sleep 1

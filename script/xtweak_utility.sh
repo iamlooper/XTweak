@@ -1,4 +1,4 @@
-#!/system/bin/bash
+#!/system/bin/sh
 # XTweak Utility Script
 # Author: LOOPER (iamlooper @ github)
 # Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
@@ -8,261 +8,272 @@
 # Basic Tool Functions
 ###############################
 
-_getprop(){
-if [[ -e "/system/bin/getprop" ]]; then
-/system/bin/getprop "$@"
+# $1:file-path $2:value
+write(){
+	# Bail out if file does not exist
+	[ ! -f "$1" ] && return 1
+
+	# Make file write-able in case it is not already
+	$chmod +w "$1" 2>/dev/null
+
+	# Write the new value and bail if there's an error
+	if ! echo "$2" > "$1" 2>/dev/null
+	then
+		echo "[!] Failed: $1 --> $2"
+		return 1
+	fi
+
+	# Log the success
+	echo "[*] Success: $1 --> $2"
+}
+
+# $1:file-path $2:value
+lock_write(){
+	# Bail out if file does not exist
+	[ ! -f "$1" ] && return 1
+
+	# Make file write-able in case it is not already
+	$chmod +w "$1" 2>/dev/null
+
+	# Write the new value and bail if there's an error
+	if ! echo "$2" > "$1" 2>/dev/null
+	then
+		echo "[!] Failed: $1 --> $2"
+		return 1
+	fi
+
+    # Lock $1
+    $chmod 000 "$1"
+
+	# Log the success
+	echo "[*] Locked: $1 --> $2"
+}
+
+# $1:value $2:file-path
+lock_val(){
+    if [ -f "$2" ]; then
+        $chmod 0666 "$2" 2>/dev/null
+        echo "$1" > "$2"
+        $chmod 0444 "$2" 2>/dev/null
+    fi
+}
+
+# $1:value $2:file-path
+mutate(){
+    if [ -f "$2" ]; then
+        $chmod 0666 "$2" 2>/dev/null
+        echo "$1" > "$2"
+    fi
+}
+
+if [ -e "/system/bin/getprop" ]; then
+getprop="/system/bin/getprop"
 else
-/system/xbin/getprop "$@"
+getprop="/system/xbin/getprop"
 fi
-}
 
-_resetprop(){
-if [[ -e "/system/bin/resetprop" ]]; then
-/system/bin/resetprop "$@"
+if [ -e "/system/bin/resetprop" ]; then
+resetprop="/system/bin/resetprop"
 else
-/system/xbin/resetprop "$@"
+resetprop="/system/xbin/resetprop"
 fi
-}
 
-_mkdir(){
-if [[ -e "/system/bin/mkdir" ]]; then
-/system/bin/mkdir "$@"
+if [ -e "/system/bin/mkdir" ]; then
+mkdir="/system/bin/mkdir"
 else
-/system/xbin/mkdir "$@"
+mkdir="/system/xbin/mkdir"
 fi
-}
 
-_clear(){
-if [[ -e "/system/bin/clear" ]]; then
-/system/bin/clear "$@"
+if [ -e "/system/bin/clear" ]; then
+clear="/system/bin/clear"
 else
-/system/xbin/clear "$@"
+clear="/system/xbin/clear"
 fi
-}
 
-_grep(){
-if [[ -e "/system/bin/grep" ]]; then
-/system/bin/grep "$@"
+if [ -e "/system/bin/grep" ]; then
+grep="/system/bin/grep"
 else
-/system/xbin/grep "$@"
+grep="/system/xbin/grep"
 fi
-}
 
-_sleep(){
-if [[ -e "/system/bin/sleep" ]]; then
-/system/bin/sleep "$@"
+if [ -e "/system/bin/grep" ]; then
+grep="/system/bin/grep"
 else
-/system/xbin/sleep "$@"
+grep="/system/xbin/grep"
 fi
-}
 
-_cat(){
-if [[ -e "/system/bin/cat" ]]; then
-/system/bin/cat "$@"
+if [ -e "/system/bin/sleep" ]; then
+sleep="/system/bin/sleep"
 else
-/system/xbin/cat "$@"
+sleep="/system/xbin/sleep"
 fi
-}
 
-_uname(){
-if [[ -e "/system/bin/uname" ]]; then
-/system/bin/uname "$@"
+if [ -e "/system/bin/cat" ]; then
+cat="/system/bin/cat"
 else
-/system/xbin/uname "$@"
+cat="/system/xbin/cat"
 fi
-}
 
-_su(){
-/data/adb/modules/xtweak/bin/su "$@"
-}
-
-_dumpsys(){
-if [[ -e "/system/bin/dumpsys" ]]; then
-/system/bin/dumpsys "$@"
+if [ -e "/system/bin/uname" ]; then
+uname="/system/bin/uname"
 else
-/system/xbin/dumpsys "$@"
+uname="/system/xbin/uname"
 fi
-}
 
-_rm(){
-if [[ -e "/system/bin/rm"  ]]; then
-/system/bin/rm "$@"
+if [ -e "/system/bin/dumpsys" ]; then
+dumpsys="/system/bin/dumpsys"
 else
-/system/xbin/rm "$@"
+dumpsys="/system/xbin/dumpsys"
 fi
-}
 
-_awk(){
-if [[ -e "/system/bin/awk" ]]; then
-/system/bin/awk "$@"
+if [ -e "/system/bin/rm" ]; then
+rm="/system/bin/rm"
 else
-/system/xbin/awk "$@"
+rm="/system/xbin/rm"
 fi
-}
 
-_cut(){
-if [[ -e "/system/bin/cut" ]]; then
-/system/bin/cut "$@"
+if [ -e "/system/bin/awk" ]; then
+awk="/system/bin/awk"
 else
-/system/xbin/cut "$@"
+awk="/system/xbin/awk"
 fi
-}
 
-_free(){
-if [[ -e "/system/bin/free" ]]; then
-/system/bin/free "$@"
+if [ -e "/system/bin/cut" ]; then
+cut="/system/bin/cut"
 else
-/system/xbin/free "$@"
+cut="/system/xbin/cut"
 fi
-}
 
-_cp(){
-if [[ -e "/system/bin/cp" ]]; then
-/system/bin/cp "$@"
+if [ -e "/system/bin/free" ]; then
+free="/system/bin/free"
 else
-/system/xbin/cp "$@"
+free="/system/xbin/free"
 fi
-}
 
-_touch(){
-if [[ -e "/system/bin/touch" ]]; then
-/system/bin/touch "$@"
+if [ -e "/system/bin/cp" ]; then
+cp="/system/bin/cp"
 else
-/system/xbin/touch "$@"
+cp="/system/xbin/cp"
 fi
-}
 
-_sed(){
-if [[ -e "/system/bin/sed" ]]; then
-/system/bin/sed "$@"
+if [ -e "/system/bin/touch" ]; then
+touch="/system/bin/touch"
 else
-/system/xbin/sed "$@"
+touch="/system/xbin/touch"
 fi
-}
 
-_date(){
-if [[ -e "/system/bin/date" ]]; then
-/system/bin/date "$@"
+if [ -e "/system/bin/sed" ]; then
+sed="/system/bin/sed"
 else
-/system/xbin/date "$@"
+sed="/system/xbin/sed"
 fi
-}
 
-_chmod(){
-if [[ -e "/system/bin/chmod" ]]; then
-/system/bin/chmod "$@"
+if [ -e "/system/bin/date" ]; then
+date="/system/bin/date"
 else
-/system/xbin/chmod "$@"
+date="/system/xbin/date"
 fi
-}
 
-_mv(){
-if [[ -e "/system/bin/mv" ]]; then
-/system/bin/mv "$@"
+if [ -e "/system/bin/chmod" ]; then
+chmod="/system/bin/chmod"
 else
-/system/xbin/mv "$@"
+chmod="/system/xbin/chmod"
 fi
-}
 
-_sync(){
-if [[ -e "/system/bin/sync" ]]; then
-/system/bin/sync "$@"
+if [ -e "/system/bin/mv" ]; then
+mv="/system/bin/mv"
 else
-/system/xbin/sync "$@"
+mv="/system/xbin/mv"
 fi
-}
 
-_pgrep(){
-if [[ -e "/system/bin/pgrep" ]]; then
-/system/bin/pgrep "$@"
+if [ -e "/system/bin/sync" ]; then
+sync="/system/bin/sync"
 else
-/system/xbin/pgrep "$@"
+sync="/system/xbin/sync"
 fi
-}
 
-_setprop(){
-if [[ -e "/system/bin/setprop" ]]; then
-/system/bin/setprop "$@"
+if [ -e "/system/bin/pgrep" ]; then
+pgrep="/system/bin/pgrep"
 else
-/system/xbin/setprop "$@"
+pgrep="/system/xbin/pgrep"
 fi
-}
 
-_killall(){
-if [[ -e "/system/bin/killall" ]]; then
-/system/bin/killall "$@"
+if [ -e "/system/bin/setprop" ]; then
+setprop="/system/bin/setprop"
 else
-/system/xbin/killall"$@"
+setprop="/system/xbin/setprop"
 fi
-}
 
-_kill(){
-if [[ -e "/system/bin/kill" ]]; then
-/system/bin/kill "$@"
+if [ -e "/system/bin/killall" ]; then
+killall="/system/bin/killall"
 else
-/system/xbin/kill "$@"
+killall="/system/xbin/killall"
 fi
-}
 
-_bash(){
-if [[ -e "/system/bin/bash" ]]; then
-/system/bin/bash "$@"
+if [ -e "/system/bin/kill" ]; then
+kill="/system/bin/kill"
 else
-/system/xbin/bash "$@"
+kill="/system/xbin/kill"
 fi
-}
 
-_am(){
-if [[ -e "/system/bin/am" ]]; then
-/system/bin/am "$@"
+if [ -e "/system/bin/am" ]; then
+am="/system/bin/am"
 else
-/system/xbin/am "$@"
+am="/system/xbin/am"
 fi
-}
 
-_pm(){
-if [[ -e "/system/bin/pm" ]]; then
-/system/bin/pm "$@"
+if [ -e "/system/bin/pm" ]; then
+pm="/system/bin/pm"
 else
-/system/xbin/pm "$@"
+pm="/system/xbin/pm"
 fi
-}
 
-_sqlite3(){
-/data/adb/modules/xtweak/bin/sqlite3 "$@"
-}
-
-_zipalign(){
-/data/adb/modules/xtweak/bin/zipalign "$@"
-}
-
-_mount(){
-if [[ -e "/system/bin/mount" ]]; then
-/system/bin/mount "$@"
+if [ -e "/system/bin/mount" ]; then
+mount="/system/bin/mount"
 else
-/system/xbin/mount "$@"
+mount="/system/xbin/mount"
 fi
-}
 
-_find(){
-if [[ -e "/system/bin/find" ]]; then
-/system/bin/find "$@"
+if [ -e "/system/bin/find" ]; then
+find="/system/bin/find"
 else
-/system/xbin/find "$@"
+find="/system/xbin/find"
 fi
-}
 
-_wc(){
-if [[ -e "/system/bin/wc" ]]; then
-/system/bin/wc "$@"
+if [ -e "/system/bin/wc" ]; then
+wc="/system/bin/wc"
 else
-/system/xbin/wc "$@"
+wc="/system/xbin/wc"
 fi
-}
 
-_busybox(){
-/data/adb/magisk/busybox "$@"
-}
+if [ -e "/system/bin/setsid" ]; then
+setsid="/system/bin/setsid"
+else
+setsid="/system/xbin/setsid"
+fi
+
+su="/data/adb/modules/xtweak/bin/su"
+
+sqlite="/data/adb/modules/xtweak/bin/sqlite3"
+
+zipalign="/data/adb/modules/xtweak/bin/zipalign"
+
+wget="/data/adb/modules/xtweak/bin/wget"
+
+busybox="/data/adb/magisk/busybox"
+
+##############################
+# Kernel Variables
+###############################
+
+KERNEL="/proc/sys/kernel"
+VM="/proc/sys/vm"
+SCHED_FEATURES="/sys/kernel/debug/sched_features"
+RAID="/proc/sys/dev/raid"
+PTY="/proc/sys/kernel/pty"
+KEYS="/proc/sys/kernel/keys"
+FS="/proc/sys/fs"
+LMK="/sys/module/lowmemorykiller/parameters"
 
 ##############################
 # Device Info Functions
@@ -270,35 +281,35 @@ _busybox(){
 
 # Fetch ram info
 _ram_info(){
-TOTAL_RAM=$(_busybox _free -m | awk '/Mem:/{print $2}')
+TOTAL_RAM=$($busybox $free -m | $awk '/Mem:/{print $2}')
 FULL_RAM=$((TOTAL_RAM * 20 / 100))
-AVAIL_RAM=$(_busybox _free -m | _awk '/Mem:/{print $7}')
+AVAIL_RAM=$($busybox $free -m | $awk '/Mem:/{print $7}')
 }
 
 # Fetch battery status
 _battery_status(){
-if [[ -e "/sys/class/power_supply/battery/status" ]]; then
-BATT_STATUS=$(_cat /sys/class/power_supply/battery/status)
+if [ -e "/sys/class/power_supply/battery/status" ]; then
+BATT_STATUS=$($cat /sys/class/power_supply/battery/status)
             
 else
-BATT_STATUS=$(_dumpsys battery | _awk '/status/{print $2}')
+BATT_STATUS=$($dumpsys battery | $awk '/status/{print $2}')
 fi
 }
 
 # Fetch battery level
 _battery_percentage(){               
-if [[ -e "/sys/class/power_supply/battery/capacity" ]]; then
-BATT_LVL=$(_cat /sys/class/power_supply/battery/capacity)
+if [ -e "/sys/class/power_supply/battery/capacity" ]; then
+BATT_LVL=$($cat /sys/class/power_supply/battery/capacity)
                   
 else
-BATT_LVL=$(_dumpsys battery | _awk '/level/{print $2}')
+BATT_LVL=$(dumpsys battery | $awk '/level/{print $2}')
 fi
 }
 
 # Fetch screen state
 _screen_state(){
-SCRN_STATE=$(_dumpsys power | _grep state=O | _cut -d "=" -f 2)
-if [[ "$scrn_state" == "ON" ]]; then 
+SCRN_STATE=$($dumpsys power | $grep state=O | $cut -d "=" -f 2)
+if [ "$scrn_state" = "ON" ]; then 
 SCRN_ON=1
 
 else 
@@ -311,81 +322,81 @@ logging_system(){
 LOG="/storage/emulated/0/XTweak/xtweak.log"
 
 # Clear logs before logging again
-_rm -rf "$LOG"
+$rm -rf "$LOG"
 
 # Fetch brand info
-BRAND=$(_getprop ro.product.brand)
+BRAND=$($getprop ro.product.brand)
 
 # Fetch device model info
-MODEL=$(_getprop ro.product.model)
+MODEL=$($getprop ro.product.model)
 
 # Fetch ROM id
-ROM=$(_getprop ro.build.display.id)
+ROM=$($getprop ro.build.display.id)
 
 # Fetch system language info
-LANG=$(_getprop persist.sys.locale) 
+LANG=$($getprop persist.sys.locale) 
 
 # Fetch android release version
-ANDROID=$(_getprop ro.build.version.release)
+ANDROID=$($getprop ro.build.version.release)
 
 # Fetch android sdk info
-SDK=$(_getprop ro.build.version.sdk) 
+SDK=$($getprop ro.build.version.sdk) 
 
 # Fetch kernel related info
-KERNEL=$(_uname -r)
+KERNEL=$($uname -r)
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-  if [[ "$(_cat $cpu/scaling_available_governors | _grep 'sched')" ]]; then
+  if [ "$($cat ${cpu}scaling_available_governors | $grep 'sched')" ]; then
       KERNEL_TYPE="EAS"
-  elif [[ "$(_cat $cpu/scaling_available_governors | _grep 'interactive')" ]]; then
+  elif [ "$($cat ${cpu}scaling_available_governors | $grep 'interactive')" ]; then
       KERNEL_TYPE="HMP"
   else
-      KERNEL TYPE="UNKNOWN"
+      KERNEL_TYPE="UNKNOWN"
   fi
 done
 
 # Fetch Arch info
-ARCH=$(_getprop ro.product.cpu.abi)
+ARCH=$($getprop ro.product.cpu.abi)
 
 # Fetch SOC (System On-Chip) info
-SOC=$(_getprop ro.board.platform) 
+SOC=$($getprop ro.board.platform) 
 
 # Fetch root method
-ROOT=$(_su -v) 
+ROOT=$($su -v) 
 
 # Fetch ram info
-TOTAL_RAM=$(_free -m | _awk '/Mem:/{print $2}')
-AVAIL_RAM=$(_free -m | _awk '/Mem:/{print $7}')
+TOTAL_RAM=$($busybox $free -m | $awk '/Mem:/{print $2}')
+AVAIL_RAM=$($busybox $free -m | $awk '/Mem:/{print $7}')
 
 # Fetch battery info
-BATT_LVL=$(_cat /sys/class/power_supply/battery/capacity)
-BATT_CPCTY=$(_cat /sys/class/power_supply/battery/charge_full_design)
-if [[ "$BATT_CPCTY" == "" ]]; then
-    BATT_CPCTY=$(_dumpsys batterystats | _grep Capacity: | _awk '{print $2}' | _cut -d "," -f 1)
+BATT_LVL=$($cat /sys/class/power_supply/battery/capacity)
+BATT_CPCTY=$($cat /sys/class/power_supply/battery/charge_full_design)
+if [ "$BATT_CPCTY" = "" ]; then
+    BATT_CPCTY=$($dumpsys batterystats | $grep Capacity: | $awk '{print $2}' | $cut -d "," -f 1)
            
-elif [[ "$BATT_CPCTY" -gt "1000000" ]]; then
-    BATT_CPCTY=$((batt_cpct / 1000))
+elif [ "$BATT_CPCTY" -gt "1000000" ]; then
+    BATT_CPCTY=$((BATT_CPCTY / 1000))
 fi
 
 # Fetch XTweak info
-TITLE=$(_grep name= "$MODPATH/module.prop" | _sed "s/name=//")
-VER=$(_grep version= "$MODPATH/module.prop" | _sed "s/version=//")
-CODENAME=$(_grep codeName= "$MODPATH/module.prop" | _sed "s/codeName=//")
-STATUS=$(_grep Status= "$MODPATH/module.prop" | _sed "s/Status=//")
-AUTHOR=$(_grep author= "$MODPATH/module.prop" | _sed "s/author=//")
+TITLE=$($grep name= "$MODPATH/module.prop" | $sed "s/name=//")
+VER=$($grep version= "$MODPATH/module.prop" | $sed "s/version=//")
+CODENAME=$($grep codeName= "$MODPATH/module.prop" | $sed "s/codeName=//")
+STATUS=$($grep Status= "$MODPATH/module.prop" | $sed "s/Status=//")
+AUTHOR=$($grep author= "$MODPATH/module.prop" | $sed "s/author=//")
 
 ##############################
 # Logging System Functions
 ###############################
 
 # Logging system header
-_sleep 4
-_awk '{print}' "$MODPATH"/xtweak_banner >> $LOG
+$sleep 4
+$awk '{print}' "$MODPATH"/xtweak_banner >> $LOG
 echo "[⚡] POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡] " >> $LOG
 echo "" >> $LOG
-_sleep 2.5
+$sleep 2.5
 echo "[*] CHECKING DEVICE INFO..." >> $LOG
-_sleep 2.5
+$sleep 2.5
 echo "~ BRAND : $BRAND " >> $LOG
 echo "~ MODEL : $MODEL " >> $LOG
 echo "~ ROM : $ROM " >> $LOG
@@ -410,9 +421,9 @@ echo "~ AUTHOR : $AUTHOR " >> $LOG
 echo "" >> $LOG
 echo "[*] CURRENT MODE: $M " >> $LOG
 echo "" >> $LOG
-echo "[*] STARTING TWEAKS AT $(_date) " >> $LOG
+echo "[*] STARTING TWEAKS AT $($date) " >> $LOG
 echo "" >> $LOG
-_sleep 3
+$sleep 3
 
 # Logging system footer
 echo "[*] CLEANED VARIOUS JUNK FILES" >> $LOG
@@ -431,7 +442,7 @@ echo "[*] DISABLED GPU LOGGING" >> $LOG
 echo "[*] DISABLED RMNET AND LOGGING DAEMONS" >> $LOG
 echo "[*] OPTIMIZED POWER EFFICIENCY" >> $LOG
 echo "" >> $LOG
-echo "[*] ENDED TWEAKS AT $(_date) " >> $LOG
+echo "[*] ENDED TWEAKS AT $($date) " >> $LOG
 echo "" >> $LOG
 }
 
@@ -441,29 +452,29 @@ echo "" >> $LOG
 
 x_sqlite(){
 SQ_LOG="/storage/emulated/0/XTweak/sqlite.log"
-if [[ -f "$SQ_LOG" ]]; then
-	_rm -rf "$SQ_LOG"
+if [ -f "$SQ_LOG" ]; then
+	$rm -rf "$SQ_LOG"
 fi
 echo " --- XTweak 2021 --- " >> $SQ_LOG
 echo "[*] Optimizing system databases..." >> $SQ_LOG
-for i in $(_find /d* -iname "*.db"); do
-_sqlite3 "$i" 'VACUUM;'
+for i in $($find /d* -iname "*.db"); do
+$sqlite "$i" 'VACUUM;'
 resVac=$?
-if [[ "$resVac" == "0" ]]; then
+if [ "$resVac" = "0" ]; then
     resVac="SUCCESS"
 else
     resVac="FAILED(ERRCODE)-$resVac"
 fi
-_sqlite3 "$i" 'REINDEX;'
+$sqlite "$i" 'REINDEX;'
 resIndex=$?
-if [[ "$resIndex" == "0" ]]; then
+if [ "$resIndex" = "0" ]; then
     resIndex="SUCCESS"
 else
     resIndex="FAILED(ERRCODE)-$resIndex"
 fi
-_sqlite3 "$i" 'ANALYZE;'
+$sqlite "$i" 'ANALYZE;'
 resAnlz=$?
-if [[ "$resAnlz" == "0" ]]; then
+if [ "$resAnlz" = "0" ]; then
 resAnlz="SUCCESS"
 else
 resAnlz="FAILED(ERRCODE)-$resAnlz"
@@ -479,31 +490,31 @@ done
 x_zipalign(){
 ZA_LOG="/storage/emulated/0/XTweak/zipalign.log"
 ZA_DB="/storage/emulated/0/XTweak/zipalign.db"
-if [[ -f "$ZA_LOG" ]]; then
-	_rm -rf "$ZA_LOG"
+if [ -f "$ZA_LOG" ]; then
+	$rm -rf "$ZA_LOG"
 
-elif [[ ! -f "$ZA_DB" ]]; then
-	_touch "$ZA_DB"
+elif [ ! -f "$ZA_DB" ]; then
+	$touch "$ZA_DB"
 fi
 echo " --- XTweak 2021 --- " >> $ZA_LOG
 for DIR in /system/app/* /data/app/* /system/product/app/* /system/priv-app/* /system/product/priv-app/* /vendor/data-app/* /vendor/app/* /vendor/overlay /system/system_ext/app/* /system/system_ext/priv-app/*
 do
    cd $DIR  
    for APK in *.apk; do
-    if [[ "$APK" -ot "/storage/emulated/0/XTweak/zipalign.db" ]] || [[ "$(_grep "$DIR/$APK" "/dev/XTweak/zipalign.db" | _wc -l)" -gt "0" ]]; then
+    if [ "$APK" -ot "/storage/emulated/0/XTweak/zipalign.db" ] || [ "$($grep "$DIR/$APK" "/dev/XTweak/zipalign.db" | $wc -l)" -gt "0" ]; then
       echo -e "[*] Already checked: $DIR/$APK" >> $ZA_LOG
      else
-      _zipalign -c 4 "$APK"
-      if [[ "$?" == "0" ]]; then
+      $zipalign -c 4 "$APK"
+      if [ "$?" = "0" ]; then
         echo -e "[*] Already aligned: $DIR/$APK" >> $ZA_LOG
-        _grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK"  >> $ZA_DB
+        $grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK"  >> $ZA_DB
       else
         echo -e "[*] Now aligning: $DIR/$APK" >> $ZA_LOG
         cd $APK
-        _zipalign -f 4 "$APK" "/cache/$APK"
-        _cp -af -p "/cache/$APK" "$APK"
-        _rm -f "/cache/$APK"
-        _grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK" >> $ZA_DB
+        $zipalign -f 4 "$APK" "/cache/$APK"
+        $cp -af -p "/cache/$APK" "$APK"
+        $rm -f "/cache/$APK"
+        $grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK" >> $ZA_DB
       fi
     fi
   done
@@ -515,44 +526,44 @@ done
 ###############################
 
 x_clean(){
-_rm -rf /data/*.log
-_rm -rf /data/vendor/wlan_logs 
-_rm -rf /data/*.txt
-_rm -rf /cache/*.apk
-_rm -rf /data/anr/*
-_rm -rf /data/backup/pending/*.tmp
-_rm -rf /data/cache/*.* 
-_rm -rf /data/data/*.log 
-_rm -rf /data/data/*.txt 
-_rm -rf /data/log/*.log 
-_rm -rf /data/log/*.txt 
-_rm -rf /data/local/*.apk 
-_rm -rf /data/local/*.log 
-_rm -rf /data/local/*.txt 
-_rm -rf /data/mlog/* 
-_rm -rf /data/system/*.log 
-_rm -rf /data/system/*.txt 
-_rm -rf /data/system/dropbox/* 
-_rm -rf /data/system/usagestats/* 
-_rm -rf /data/system/shared_prefs/* 
-_rm -rf /data/tombstones/* 
-_rm -rf /sdcard/LOST.DIR 
-_rm -rf /sdcard/found000 
-_rm -rf /sdcard/LazyList 
-_rm -rf /sdcard/albumthumbs 
-_rm -rf /sdcard/kunlun 
-_rm -rf /sdcard/.CacheOfEUI 
-_rm -rf /sdcard/.bstats 
-_rm -rf /sdcard/.taobao 
-_rm -rf /sdcard/Backucup 
-_rm -rf /sdcard/MIUI/debug_log 
-_rm -rf /sdcard/ramdump 
-_rm -rf /sdcard/UnityAdsVideoCache 
-_rm -rf /sdcard/*.log 
-_rm -rf /sdcard/*.CHK 
-_rm -rf /sdcard/duilite 
-_rm -rf /sdcard/DkMiBrowserDemo 
-_rm -rf /sdcard/.xlDownload 
+$rm -rf /data/*.log
+$rm -rf /data/vendor/wlan_logs 
+$rm -rf /data/*.txt
+$rm -rf /cache/*.apk
+$rm -rf /data/anr/*
+$rm -rf /data/backup/pending/*.tmp
+$rm -rf /data/cache/*.* 
+$rm -rf /data/data/*.log 
+$rm -rf /data/data/*.txt 
+$rm -rf /data/log/*.log 
+$rm -rf /data/log/*.txt 
+$rm -rf /data/local/*.apk 
+$rm -rf /data/local/*.log 
+$rm -rf /data/local/*.txt 
+$rm -rf /data/mlog/* 
+$rm -rf /data/system/*.log 
+$rm -rf /data/system/*.txt 
+$rm -rf /data/system/dropbox/* 
+$rm -rf /data/system/usagestats/* 
+$rm -rf /data/system/shared_prefs/* 
+$rm -rf /data/tombstones/* 
+$rm -rf /sdcard/LOST.DIR 
+$rm -rf /sdcard/found000 
+$rm -rf /sdcard/LazyList 
+$rm -rf /sdcard/albumthumbs 
+$rm -rf /sdcard/kunlun 
+$rm -rf /sdcard/.CacheOfEUI 
+$rm -rf /sdcard/.bstats 
+$rm -rf /sdcard/.taobao 
+$rm -rf /sdcard/Backucup 
+$rm -rf /sdcard/MIUI/debug_log 
+$rm -rf /sdcard/ramdump 
+$rm -rf /sdcard/UnityAdsVideoCache 
+$rm -rf /sdcard/*.log 
+$rm -rf /sdcard/*.CHK 
+$rm -rf /sdcard/duilite 
+$rm -rf /sdcard/DkMiBrowserDemo 
+$rm -rf /sdcard/.xlDownload 
 }
 
 ##############################
@@ -561,32 +572,32 @@ _rm -rf /sdcard/.xlDownload
 
 x_doze(){
 # Stop certain services and restart it on boot
-if [[ "$(busybox pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | _wc -l)" == "1" ]]; then
-_kill $(busybox com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService)
+if [ "$(busybox pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | $wc -l)" = "1" ]; then
+$kill $(busybox com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService)
 
-elif [[ "$(busybox pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver | _wc -l)" == "1" ]]; then
-_kill $(busybox pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver)
+elif [ "$(busybox pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver | $wc -l)" = "1" ]; then
+$kill $(busybox pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver)
 
-elif [[ "$(busybox pidof com.google.android.gms.unstable | _wc -l)" == "1" ]]; then
-_kill $(busybox pidof com.google.android.gms.unstable)
+elif [ "$(busybox pidof com.google.android.gms.unstable | $wc -l)" = "1" ]; then
+$kill $(busybox pidof com.google.android.gms.unstable)
 
-elif [[ "$(busybox pidof com.google.android.gms.wearable | _wc -l)" == "1" ]]; then
-_kill $(busybox pidof com.google.android.gms.wearable)
+elif [ "$(busybox pidof com.google.android.gms.wearable | $wc -l)" = "1" ]; then
+$kill $(busybox pidof com.google.android.gms.wearable)
 
-elif [[ "$(busybox pidof com.google.android.gms.backup.backupTransportService | _wc -l)" == "1" ]]; then
-_kill $(busybox pidof com.google.android.gms.backup.backupTransportService)
+elif [ "$(busybox pidof com.google.android.gms.backup.backupTransportService | $wc -l)" = "1" ]; then
+$kill $(busybox pidof com.google.android.gms.backup.backupTransportService)
 
-elif [[ "$(busybox pidof com.google.android.gms.lockbox.LockboxService | _wc -l)" == "1" ]]; then
-_kill $(busybox pidof com.google.android.gms.lockbox.LockboxService)
+elif [ "$(busybox pidof com.google.android.gms.lockbox.LockboxService | $wc -l)" = "1" ]; then
+$kill $(busybox pidof com.google.android.gms.lockbox.LockboxService)
 
-elif [[ "$(busybox pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService | _wc -l)" == "1" ]]; then
-_kill $(busybox pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService)
+elif [ "$(busybox pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService | $wc -l)" = "1" ]; then
+$kill $(busybox pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService)
 fi
 for i in $(ls /data/user/)
 do
 # Disable collective Device administrators
-_pm disable --user $i com.google.android.gms/com.google.android.gms.auth.managed.admin.DeviceAdminReceiver 2>/dev/null  
-_pm disable --user $i com.google.android.gms/com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver 2>/dev/null  
+$pm disable --user $i com.google.android.gms/com.google.android.gms.auth.managed.admin.DeviceAdminReceiver 2>/dev/null  
+$pm disable --user $i com.google.android.gms/com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver 2>/dev/null  
 # Disable both GMS and IMS 'Modify system settings' and restart it on boot
 cmd appops set --user $i com.google.android.gms WRITE_SETTINGS ignore
 cmd appops set --user $i com.google.android.ims WRITE_SETTINGS ignore
@@ -619,9 +630,9 @@ settings put global device_idle_constants inactive_to=60000,sensing_to=0,locatin
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_task_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             echo "$temp_tid" > "/dev/$3/$2/tasks"
         done
     done
@@ -630,8 +641,8 @@ change_task_cgroup(){
 # $1:process_name $2:cgroup_name $3:"cpuset"/"stune"
 change_proc_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
-        comm="$(cat /proc/"$temp_pid"/comm)"
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+        comm="$($cat /proc/"$temp_pid"/comm)"
         echo "$temp_pid" > "/dev/$3/$2/cgroup.procs"
     done
 }
@@ -639,10 +650,10 @@ change_proc_cgroup(){
 # $1:task_name $2:thread_name $3:cgroup_name $4:"cpuset"/"stune"
 change_thread_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
                 echo "$temp_tid" > "/dev/$4/$3/tasks"
             fi
         done
@@ -652,8 +663,8 @@ change_thread_cgroup(){
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_main_thread_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
-        comm="$(cat /proc/"$temp_pid"/comm)"
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+        comm="$($cat /proc/"$temp_pid"/comm)"
         echo "$temp_pid" > "/dev/$3/$2/tasks"
     done
 }
@@ -661,9 +672,9 @@ change_main_thread_cgroup(){
 # $1:task_name $2:hex_mask(0x00000003 is CPU0 and CPU1)
 change_task_affinity(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             taskset -p "$2" "$temp_tid" >> "$LOG_FILE"
         done
     done
@@ -672,10 +683,10 @@ change_task_affinity(){
 # $1:task_name $2:thread_name $3:hex_mask(0x00000003 is CPU0 and CPU1)
 change_thread_affinity(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
                 taskset -p "$3" "$temp_tid" >> "$LOG_FILE"
             fi
         done
@@ -684,7 +695,7 @@ change_thread_affinity(){
 
 # $1:task_name $2:nice(relative to 120)
 change_task_nice(){
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
             renice -n +40 -p "$temp_tid"
             renice -n -19 -p "$temp_tid"
@@ -696,10 +707,10 @@ change_task_nice(){
 # $1:task_name $2:thread_name $3:nice(relative to 120)
 change_thread_nice(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
                 renice -n +40 -p "$temp_tid"
                 renice -n -19 -p "$temp_tid"
                 renice -n "$3" -p "$temp_tid"
@@ -710,9 +721,9 @@ change_thread_nice(){
 
 # $1:task_name $2:priority(99-x, 1<=x<=99)
 change_task_rt(){
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             chrt -f -p "$2" "$temp_tid" >> "$LOG_FILE"
         done
     done
@@ -721,10 +732,10 @@ change_task_rt(){
 # $1:task_name $2:thread_name $3:priority(99-x, 1<=x<=99)
 change_thread_rt(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
+            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
                 chrt -f -p "$3" "$temp_tid" >> "$LOG_FILE"
             fi
         done
@@ -866,34 +877,34 @@ change_task_nice "magiskd" "19"
 ###############################
 
 x_hwui(){
-if [[ "$TOTAL_RAM" -lt 3072 ]]; then
-_resetprop hwui.use_gpu_pixel_buffers false
-_resetprop debug.hwui.use_buffer_age false
-_resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100 / 2))
-_resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100 / 2))
-_resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100 / 2))
-_resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100 / 2))
-_resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100 / 2))
-_resetprop ro.hwui.texture_cache_flushrate 0.3
-_resetprop ro.hwui.gradient_cache_size 1
-_resetprop ro.hwui.text_small_cache_width 1024
-_resetprop ro.hwui.text_small_cache_height 1024
-_resetprop ro.hwui.text_large_cache_width 2048
-_resetprop ro.hwui.text_large_cache_height 1024
+if [ "$TOTAL_RAM" -lt "3072" ]; then
+$resetprop hwui.use_gpu_pixel_buffers false
+$resetprop debug.hwui.use_buffer_age false
+$resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100 / 2))
+$resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100 / 2))
+$resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100 / 2))
+$resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100 / 2))
+$resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100 / 2))
+$resetprop ro.hwui.texture_cache_flushrate 0.3
+$resetprop ro.hwui.gradient_cache_size 1
+$resetprop ro.hwui.text_small_cache_width 1024
+$resetprop ro.hwui.text_small_cache_height 1024
+$resetprop ro.hwui.text_large_cache_width 2048
+$resetprop ro.hwui.text_large_cache_height 1024
 else
-_resetprop hwui.use_gpu_pixel_buffers false
-_resetprop debug.hwui.use_buffer_age false
-_resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100))
-_resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100))
-_resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100))
-_resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100))
-_resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100))
-_resetprop ro.hwui.texture_cache_flushrate 0.3
-_resetprop ro.hwui.gradient_cache_size 1
-_resetprop ro.hwui.text_small_cache_width 1024
-_resetprop ro.hwui.text_small_cache_height 1024
-_resetprop ro.hwui.text_large_cache_width 2048
-_resetprop ro.hwui.text_large_cache_height 1024
+$resetprop hwui.use_gpu_pixel_buffers false
+$resetprop debug.hwui.use_buffer_age false
+$resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100))
+$resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100))
+$resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100))
+$resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100))
+$resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100))
+$resetprop ro.hwui.texture_cache_flushrate 0.3
+$resetprop ro.hwui.gradient_cache_size 1
+$resetprop ro.hwui.text_small_cache_width 1024
+$resetprop ro.hwui.text_small_cache_height 1024
+$resetprop ro.hwui.text_large_cache_width 2048
+$resetprop ro.hwui.text_large_cache_height 1024
 fi
 }
 

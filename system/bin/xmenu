@@ -6,13 +6,5 @@
 
 MODPATH="/data/adb/modules/xtweak"
 
-_bash(){
-if [[ -e "/system/bin/bash" ]]; then
-/system/bin/bash "$@"
-else
-/system/xbin/bash "$@"
-fi
-}
-
 # Exuecute main
-_bash "${MODPATH}/script/xmenu.sh"
+sh "$MODPATH/script/xmenu.sh"
