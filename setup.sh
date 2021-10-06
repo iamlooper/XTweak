@@ -29,14 +29,14 @@ REPLACE="
 "
 
 # Set what you want to be displayed on header on installation process
-mod_info_print() {
+mod_info_print(){
 awk '{print}' "$MODPATH"/xtweak_banner
 ui_print ""
 ui_print "[⚡] UNIVERSAL POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡]"
 }
 
 # Default extraction path is to $MODPATH. Change the logic to whatever you want.
-install_module() {
+install_module(){
 # Remove old XTweak dir
 rm -rf "/storage/emulated/0/XTweak"
 mkdir -p "/storage/emulated/0/XTweak"
@@ -195,10 +195,12 @@ sleep 4
 }
 
 # Set permissions
-set_permissions() {
+set_permissions(){
   set_perm_recursive "$MODPATH" 0 0 0755 0644
-  set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
-  set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
   set_perm_recursive "$MODPATH/script" 0 0 0755 0755
   set_perm_recursive "$MODPATH/bin" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/bin" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/vendor" 0 0 0755 0755
+  set_perm_recursive "$MODPATH/system/vendor/etc" 0 0 0755 0755
 }

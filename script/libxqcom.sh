@@ -1,23 +1,23 @@
 #!/system/bin/sh
-# Qcom Optimization Binary For XTweak
+# XTweak - Qualcomm™ SOCs Optimization Library
 # Author : LOOPER (iamlooper @ github)
 # Credits : Ferat Kesaev (feravolt @ github), The Linux Foundation
 
-function 8953_sched_dcvs_eas() {
+8953_sched_dcvs_eas(){
   echo "1" > /sys/devices/system/cpu/cpu0/online
   echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
   echo "0" > /sys/devices/system/cpu/cpufreq/schedutil/rate_limit_us
   echo "1401600" > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_freq
   echo "85" > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_load
 }
-function 8917_sched_dcvs_eas() {
+8917_sched_dcvs_eas(){
   echo "1" > /sys/devices/system/cpu/cpu0/online
   echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
   echo "0" > /sys/devices/system/cpu/cpufreq/schedutil/rate_limit_us
   echo "1094400" > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_freq
   echo "85" > /sys/devices/system/cpu/cpufreq/schedutil/hispeed_load
 }
-function 8937_sched_dcvs_eas() {
+8937_sched_dcvs_eas(){
   echo "1" > /sys/devices/system/cpu/cpu0/online
   echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
   echo "0" > /sys/devices/system/cpu/cpu0/cpufreq/schedutil/rate_limit_us
@@ -29,7 +29,7 @@ function 8937_sched_dcvs_eas() {
   echo "768000" > /sys/devices/system/cpu/cpu4/cpufreq/schedutil/hispeed_freq
   echo "85" > /sys/devices/system/cpu/cpu4/cpufreq/schedutil/hispeed_load
 }
-function 8953_sched_dcvs_hmp() {
+8953_sched_dcvs_hmp(){
   echo "3" > /proc/sys/kernel/sched_window_stats_policy
   echo "3" > /proc/sys/kernel/sched_ravg_hist_size
   echo "0" > /sys/devices/system/cpu/cpu0/sched_static_cpu_pwr_cost
@@ -59,7 +59,7 @@ function 8953_sched_dcvs_hmp() {
   echo "200000" > /proc/sys/kernel/sched_freq_inc_notify
   echo "200000" > /proc/sys/kernel/sched_freq_dec_notify
 }
-function 8917_sched_dcvs_hmp() {
+8917_sched_dcvs_hmp(){
   echo "3" > /proc/sys/kernel/sched_window_stats_policy
   echo "3" > /proc/sys/kernel/sched_ravg_hist_size
   echo "1" > /proc/sys/kernel/sched_restrict_tasks_spread
@@ -91,7 +91,7 @@ function 8917_sched_dcvs_hmp() {
   echo "50000" > /proc/sys/kernel/sched_freq_inc_notify
   echo "50000" > /proc/sys/kernel/sched_freq_dec_notify
 }
-function 8937_sched_dcvs_hmp() {
+8937_sched_dcvs_hmp(){
   echo "3" > /proc/sys/kernel/sched_window_stats_policy
   echo "3" > /proc/sys/kernel/sched_ravg_hist_size
   echo "20" > /proc/sys/kernel/sched_small_task
@@ -146,7 +146,7 @@ function 8937_sched_dcvs_hmp() {
   echo "50000" > /proc/sys/kernel/sched_freq_inc_notify
   echo "50000" > /proc/sys/kernel/sched_freq_dec_notify
 }
-function sdm660_sched_interactive_dcvs() {
+sdm660_sched_interactive_dcvs(){
   echo "0" > /proc/sys/kernel/sched_select_prev_cpu_us
   echo "400000" > /proc/sys/kernel/sched_freq_inc_notify
   echo "400000" > /proc/sys/kernel/sched_freq_dec_notify
@@ -231,7 +231,7 @@ function sdm660_sched_interactive_dcvs() {
   done
   echo "cpufreq" > /sys/class/devfreq/soc:qcom,mincpubw/governor
 }
-function sdm660_sched_schedutil_dcvs() {
+sdm660_sched_schedutil_dcvs(){
   echo "schedutil" > /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor
   echo "0" > /sys/devices/system/cpu/cpu0/cpufreq/schedutil/up_rate_limit_us
   echo "0" > /sys/devices/system/cpu/cpu0/cpufreq/schedutil/down_rate_limit_us
@@ -282,7 +282,7 @@ function sdm660_sched_schedutil_dcvs() {
   done
 }
 target=$(getprop ro.board.platform)
-function configure_read_ahead_kb_values() {
+configure_read_ahead_kb_values(){
   MemTotalStr=$(cat /proc/meminfo | grep MemTotal)
   MemTotal=${MemTotalStr:16:8}
   dmpts=$(ls /sys/block/*/queue/read_ahead_kb | grep -e dm -e mmc)
@@ -300,16 +300,16 @@ function configure_read_ahead_kb_values() {
     done
   fi
 }
-function disable_core_ctl() {
+disable_core_ctl(){
   if [ -f /sys/devices/system/cpu/cpu0/core_ctl/enable ]; then
     echo "0" > /sys/devices/system/cpu/cpu0/core_ctl/enable
   else
     echo "1" > /sys/devices/system/cpu/cpu0/core_ctl/disable
   fi
 }
-function configure_memory_parameters() {
+configure_memory_parameters(){
   ProductName=$(getprop ro.product.name)
-  if [ "$ProductName" == "msmnile" ] || [ "$ProductName" == "kona" ] || [ "$ProductName" == "sdmshrike_au" ]; then
+  if [ "$ProductName" = "msmnile" ] || [ "$ProductName" = "kona" ] || [ "$ProductName" = "sdmshrike_au" ]; then
     configure_read_ahead_kb_values
     echo "0" > /proc/sys/vm/page-cluster
     echo "100" > /proc/sys/vm/swappiness
@@ -320,7 +320,7 @@ function configure_memory_parameters() {
     set_almk_ppr_adj="${adj_1%%,*}"
     set_almk_ppr_adj=$(((set_almk_ppr_adj * 6) + 6))
     echo "$set_almk_ppr_adj " > /sys/module/lowmemorykiller/parameters/adj_max_shift
-    if [ "$arch_type" == "aarch64" ]; then
+    if [ "$arch_type" = "aarch64" ]; then
       minfree_series=$(cat /sys/module/lowmemorykiller/parameters/minfree)
       minfree_1="${minfree_series#*,}"
       minfree_2="${minfree_1#*,}"
@@ -331,7 +331,7 @@ function configure_memory_parameters() {
       vmpres_file_min=$((minfree_5 + (minfree_5 - rem_minfree_4)))
       echo "$vmpres_file_min" > /sys/module/lowmemorykiller/parameters/vmpressure_file_min
     else
-      if [ "$ProductName" == "msm8909" ]; then
+      if [ "$ProductName" = "msm8909" ]; then
         disable_core_ctl
         echo "1" > /sys/module/lowmemorykiller/parameters/enable_lmk
       fi
@@ -342,7 +342,7 @@ function configure_memory_parameters() {
     if [ -f /sys/module/lowmemorykiller/parameters/oom_reaper ]; then
       echo "1" > /sys/module/lowmemorykiller/parameters/oom_reaper
     fi
-    if [[ "$ProductName" != "bengal"* ]]; then
+    if [ "$ProductName" != "bengal" ]; then
       if [ -f /sys/devices/soc0/soc_id ]; then
         soc_id=$(cat /sys/devices/soc0/soc_id)
       else
@@ -358,7 +358,7 @@ function configure_memory_parameters() {
         ;;
       esac
     fi
-    if [[ "$ProductName" == "bengal"* ]]; then
+    if [ "$ProductName" = "bengal" ]; then
       if [ -f /sys/devices/soc0/soc_id ]; then
         soc_id=$(cat /sys/devices/soc0/soc_id)
       else
@@ -380,7 +380,7 @@ function configure_memory_parameters() {
     configure_read_ahead_kb_values
   fi
 }
-function enable_memory_features() {
+enable_memory_features(){
   MemTotalStr=$(cat /proc/meminfo | grep MemTotal)
   MemTotal=${MemTotalStr:16:8}
   if [ $MemTotal -le 2097152 ]; then
@@ -390,7 +390,7 @@ function enable_memory_features() {
     setprop ro.vendor.qti.am.reschedule_service true
   fi
 }
-function start_hbtp() {
+start_hbtp(){
   bootmode=$(getprop ro.bootmode)
   if [ "charger" != $bootmode ]; then
     start vendor.hbtp
@@ -1141,7 +1141,7 @@ case "$target" in "msm8952")
     ;;
   *)
     panel=$(cat /sys/class/graphics/fb0/modes)
-    if [ "${panel:5:1}" == "x" ]; then
+    if [ "${panel:5:1}" = "x" ]; then
       panel=${panel:2:3}
     else
       panel=${panel:2:4}
@@ -1229,14 +1229,14 @@ case "$target" in "msm8952")
     echo "1" > /sys/devices/system/cpu/cpu6/online
     echo "1" > /sys/devices/system/cpu/cpu7/online
     ProductName=$(getprop ro.product.name)
-    if [ "$ProductName" == "msm8952_32" ] || [ "$ProductName" == "msm8952_32_LMT" ]; then
+    if [ "$ProductName" = "msm8952_32" ] || [ "$ProductName" = "msm8952_32_LMT" ]; then
       echo "N" > /sys/module/lpm_levels/system/a72/cpu4/retention/idle_enabled
       echo "N" > /sys/module/lpm_levels/system/a72/cpu5/retention/idle_enabled
       echo "N" > /sys/module/lpm_levels/system/a72/cpu6/retention/idle_enabled
       echo "N" > /sys/module/lpm_levels/system/a72/cpu7/retention/idle_enabled
     fi
     # shellcheck disable=SC2046
-    if [ $(cat /sys/devices/soc0/revision) == "1.0" ]; then
+    if [ $(cat /sys/devices/soc0/revision) = "1.0" ]; then
       echo "N" > /sys/module/lpm_levels/system/a53/a53-l2-gdhs/idle_enabled
       echo "N" > /sys/module/lpm_levels/system/a72/a72-l2-gdhs/idle_enabled
       echo "N" > /sys/module/lpm_levels/system/a53/a53-l2-pc/idle_enabled
@@ -1747,7 +1747,7 @@ case "$target" in "sdm660")
     hw_platform=$(cat /sys/devices/system/soc/soc0/hw_platform)
   fi
   panel=$(cat /sys/class/graphics/fb0/modes)
-  if [ "${panel:5:1}" == "x" ]; then
+  if [ "${panel:5:1}" = "x" ]; then
     panel=${panel:2:3}
   else
     panel=${panel:2:4}
@@ -2039,11 +2039,11 @@ case "$target" in "trinket")
       for cpubw in $device/*cpu-cpu-ddr-bw/devfreq/*cpu-cpu-ddr-bw; do
         echo "bw_hwmon" > $cpubw/governor
         echo "762" > $cpubw/min_freq
-        if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+        if [ ${ddr_type:4:2} = $ddr_type4 ]; then
           echo "2288 3440 4173 5195 5859 7759 10322 11863 13763" > $cpubw/bw_hwmon/mbps_zones
           echo "85" > $cpubw/bw_hwmon/io_percent
         fi
-        if [ ${ddr_type:4:2} == $ddr_type3 ]; then
+        if [ ${ddr_type:4:2} = $ddr_type3 ]; then
           echo "1525 3440 5195 5859 7102" > $cpubw/bw_hwmon/mbps_zones
           echo "34" > $cpubw/bw_hwmon/io_percent
         fi
@@ -2305,7 +2305,7 @@ case "$target" in "lito")
     echo "120" > /sys/devices/system/cpu/cpu_boost/input_boost_ms
     configure_memory_parameters
     # shellcheck disable=SC2046
-    if [ $(cat /sys/devices/soc0/revision) == "2.0" ]; then
+    if [ $(cat /sys/devices/soc0/revision) = "2.0" ]; then
       echo "0:1075200" > /sys/devices/system/cpu/cpu_boost/input_boost_freq
       echo "610000" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/rtg_boost_freq
       echo "1075200" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/hispeed_freq
@@ -2574,11 +2574,11 @@ case "$target" in "bengal")
         echo "bw_hwmon" > $cpubw/governor
         echo "50" > $cpubw/polling_interval
         echo "762" > $cpubw/min_freq
-        if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+        if [ ${ddr_type:4:2} = $ddr_type4 ]; then
           echo "2288 3440 4173 5195 5859 7759 10322 11863 13763" > $cpubw/bw_hwmon/mbps_zones
           echo "85" > $cpubw/bw_hwmon/io_percent
         fi
-        if [ ${ddr_type:4:2} == $ddr_type3 ]; then
+        if [ ${ddr_type:4:2} = $ddr_type3 ]; then
           echo "1525 3440 5195 5859 7102" > $cpubw/bw_hwmon/mbps_zones
           echo "34" > $cpubw/bw_hwmon/io_percent
         fi
@@ -2633,11 +2633,11 @@ case "$target" in "bengal")
         echo "bw_hwmon" > $cpubw/governor
         echo "50" > $cpubw/polling_interval
         echo "762" > $cpubw/min_freq
-        if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+        if [ ${ddr_type:4:2} = $ddr_type4 ]; then
           echo "2288 3440 4173 5195 5859 7759 10322 11863 13763" > $cpubw/bw_hwmon/mbps_zones
           echo "85" > $cpubw/bw_hwmon/io_percent
         fi
-        if [ ${ddr_type:4:2} == $ddr_type3 ]; then
+        if [ ${ddr_type:4:2} = $ddr_type3 ]; then
           echo "1525 3440 5195 5859 7102" > $cpubw/bw_hwmon/mbps_zones
           echo "34" > $cpubw/bw_hwmon/io_percent
         fi
@@ -3132,9 +3132,9 @@ case "$target" in "msm8996")
   done
   echo "cpufreq" > /sys/class/devfreq/soc:qcom,mincpubw/governor
   soc_revision=$(cat /sys/devices/soc0/revision)
-  if [ "$soc_revision" == "2.0" ]; then
+  if [ "$soc_revision" = "2.0" ]; then
     echo "pwr_dbg " > /sys/power/wake_lock
-  elif [ "$soc_revision" == "2.1" ]; then
+  elif [ "$soc_revision" = "2.1" ]; then
     echo "0" > /sys/module/lpm_levels/system/pwr/pwr-l2-gdhs/idle_enabled
     echo "0" > /sys/module/lpm_levels/system/perf/perf-l2-gdhs/idle_enabled
     echo "N" > /sys/module/lpm_levels/system/pwr/cpu0/fpc-def/idle_enabled
@@ -3551,7 +3551,7 @@ case "$target" in "kona")
   echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy0/scaling_governor
   echo "0" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/down_rate_limit_us
   echo "0" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/up_rate_limit_us
-  if [ $rev == "2.0" ] || [ $rev == "2.1" ]; then
+  if [ $rev = "2.0" ] || [ $rev = "2.1" ]; then
     echo "1248000" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/hispeed_freq
   else
     echo "1228800" > /sys/devices/system/cpu/cpufreq/policy0/schedutil/hispeed_freq
@@ -3567,7 +3567,7 @@ case "$target" in "kona")
   echo "schedutil" > /sys/devices/system/cpu/cpufreq/policy7/scaling_governor
   echo "0" > /sys/devices/system/cpu/cpufreq/policy7/schedutil/down_rate_limit_us
   echo "0" > /sys/devices/system/cpu/cpufreq/policy7/schedutil/up_rate_limit_us
-  if [ $rev == "2.0" ] || [ $rev == "2.1" ]; then
+  if [ $rev = "2.0" ] || [ $rev = "2.1" ]; then
     echo "1632000" > /sys/devices/system/cpu/cpufreq/policy7/schedutil/hispeed_freq
   else
     echo "1612800" > /sys/devices/system/cpu/cpufreq/policy7/schedutil/hispeed_freq
@@ -3590,9 +3590,9 @@ case "$target" in "kona")
     done
     for llccbw in $device/*cpu-llcc-ddr-bw/devfreq/*cpu-llcc-ddr-bw; do
       echo "bw_hwmon" > $llccbw/governor
-      if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+      if [ ${ddr_type:4:2} = $ddr_type4 ]; then
         echo "1720 2086 2929 3879 5161 5931 6881 7980" > $llccbw/bw_hwmon/mbps_zones
-      elif [ ${ddr_type:4:2} == $ddr_type5 ]; then
+      elif [ ${ddr_type:4:2} = $ddr_type5 ]; then
         echo "1720 2086 2929 3879 5931 6881 7980 10437" > $llccbw/bw_hwmon/mbps_zones
       fi
       echo "4" > $llccbw/bw_hwmon/sample_ms
@@ -3609,9 +3609,9 @@ case "$target" in "kona")
     for npubw in $device/*npu*-ddr-bw/devfreq/*npu*-ddr-bw; do
       echo "1" > /sys/devices/virtual/npu/msm_npu/pwr
       echo "bw_hwmon" > $npubw/governor
-      if [ ${ddr_type:4:2} == $ddr_type4 ]; then
+      if [ ${ddr_type:4:2} = $ddr_type4 ]; then
         echo "1720 2086 2929 3879 5931 6881 7980" > $npubw/bw_hwmon/mbps_zones
-      elif [ ${ddr_type:4:2} == $ddr_type5 ]; then
+      elif [ ${ddr_type:4:2} = $ddr_type5 ]; then
         echo "1720 2086 2929 3879 5931 6881 7980 10437" > $npubw/bw_hwmon/mbps_zones
       fi
       echo "4" > $npubw/bw_hwmon/sample_ms
