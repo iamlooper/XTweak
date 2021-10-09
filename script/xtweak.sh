@@ -1,61 +1,345 @@
 #!/system/bin/sh
-# XTweak - Main & Misc. Optimizations Library
+# XTweak™ | Main & Misc. Optimizations && Basic Tools & Logging System Functions Script
 # Author: LOOPER (iamlooper @ github)
-# Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
+# Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github), Danijel Markov (Paget96 @ github)
 # Don't take any work from here until you maintain proper credits of respective devs.
+
+##############################
+# Basic Tool Functions
+##############################
+
+# $1:file-path $2:value
+write(){
+	# Bail out if file does not exist
+	[ ! -f "$1" ] && return 1
+
+	# Make file write-able in case it is not already
+	$bb chmod +w "$1" 2>/dev/null
+
+	# Write the new value and bail if there's an error
+	if ! echo "$2" > "$1" 2>/dev/null
+	then
+		echo "[!] Failed: $1 --> $2"
+		return 1
+	fi
+
+	# Log the success
+	echo "[*] Success: $1 --> $2"
+}
+
+# $1:file-path $2:value
+lock(){
+	# Bail out if file does not exist
+	[ ! -f "$1" ] && return 1
+
+	# Make file write-able in case it is not already
+	$bb chmod +w "$1" 2>/dev/null
+
+	# Write the new value and bail if there's an error
+	if ! echo "$2" > "$1" 2>/dev/null
+	then
+		echo "[!] Failed: $1 --> $2"
+		return 1
+	fi
+
+    # Lock $1
+    $bb chmod 0444 "$1"
+
+	# Log the success
+	echo "[*] Locked: $1 --> $2"
+}
+
+# $1:value $2:file-path
+mutate(){
+    if [ -f "$2" ]; then
+        $bb chmod 0666 "$2" 2>/dev/null
+        echo "$1" > "$2"
+    fi
+}
+
+if [ -e "/system/bin/getprop" ]; then
+getprop="/system/bin/getprop"
+else
+getprop="/system/xbin/getprop"
+fi
+
+if [ -e "/system/bin/resetprop" ]; then
+resetprop="/system/bin/resetprop"
+else
+resetprop="/system/xbin/resetprop"
+fi
+
+if [ -e "/system/bin/dumpsys" ]; then
+dumpsys="/system/bin/dumpsys"
+else
+dumpsys="/system/xbin/dumpsys"
+fi
+
+if [ -e "/system/bin/setprop" ]; then
+setprop="/system/bin/setprop"
+else
+setprop="/system/xbin/setprop"
+fi
+
+if [ -e "/system/bin/am" ]; then
+am="/system/bin/am"
+else
+am="/system/xbin/am"
+fi
+
+if [ -e "/system/bin/pm" ]; then
+pm="/system/bin/pm"
+else
+pm="/system/xbin/pm"
+fi
+
+su="/data/adb/modules/xtweak/bin/su"
+
+sqlite="/data/adb/modules/xtweak/bin/sqlite3"
+
+zipalign="/data/adb/modules/xtweak/bin/zipalign"
+
+bb="/data/adb/magisk/busybox"
+
+##############################
+# Kernel Variables
+###############################
+
+kernel="/proc/sys/kernel/"
+vm="/proc/sys/vm/"
+sched_features="/sys/kernel/debug/sched_features"
+raid="/proc/sys/dev/raid/"
+pty="/proc/sys/kernel/pty/"
+keys="/proc/sys/kernel/keys/"
+fs="/proc/sys/fs/"
+lmk="/sys/module/lowmemorykiller/parameters/"
+lpm="/sys/module/lpm_levels/"
+mmc="/sys/module/mmc_core/parameters/"
+
+##############################
+# Device Info Functions
+###############################
+
+# Fetch ram info
+_ram_info(){
+TOTAL_RAM=$($bb free -m | $bb awk '/Mem:/{print $2}')
+FULL_RAM=$((TOTAL_RAM * 20 / 100))
+AVAIL_RAM=$($bb free -m | $bb awk '/Mem:/{print $7}')
+}
+
+# Fetch battery status
+_battery_status(){
+if [ -e "/sys/class/power_supply/battery/status" ]; then
+BATT_STATUS=$($bb cat /sys/class/power_supply/battery/status)
+            
+else
+BATT_STATUS=$($dumpsys battery | $bb awk '/status/{print $2}')
+fi
+}
+
+# Fetch battery level
+_battery_percentage(){               
+if [ -e "/sys/class/power_supply/battery/capacity" ]; then
+BATT_LVL=$($bb cat /sys/class/power_supply/battery/capacity)
+                  
+else
+BATT_LVL=$($dumpsys battery | $bb awk '/level/{print $2}')
+fi
+}
+
+# Fetch screen state
+_screen_state(){
+SCRN_STATE=$($dumpsys power | $bb grep state=O | $bb cut -d "=" -f 2)
+if [ "$scrn_state" = "ON" ]; then 
+SCRN_ON=1
+
+else 
+SCRN_ON=0
+fi
+}
+
+logging_system(){
+
+LOG="/storage/emulated/0/XTweak/xtweak.log"
+
+# Clear logs before logging again
+$bb rm -rf "$LOG"
+
+# Fetch brand info
+BRAND=$($getprop ro.product.brand)
+
+# Fetch device model info
+MODEL=$($getprop ro.product.model)
+
+# Fetch ROM id
+ROM=$($getprop ro.build.display.id)
+
+# Fetch system language info
+LANG=$($getprop persist.sys.locale) 
+
+# Fetch android release version
+ANDROID=$($getprop ro.build.version.release)
+
+# Fetch android sdk info
+SDK=$($getprop ro.build.version.sdk) 
+
+# Fetch kernel related info
+KERNEL=$($bb uname -r)
+for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
+do
+  if [ "$($bb cat ${cpu}scaling_available_governors | $bb grep 'sched')" ]; then
+      KERNEL_TYPE="EAS"
+  elif [ "$($bb cat ${cpu}scaling_available_governors | $bb grep 'interactive')" ]; then
+      KERNEL_TYPE="HMP"
+  else
+      KERNEL_TYPE="UNKNOWN"
+  fi
+done
+
+# Fetch Arch info
+ARCH=$($getprop ro.product.cpu.abi)
+
+# Fetch SOC (System On-Chip) info
+SOC=$($getprop ro.board.platform) 
+
+# Fetch root method
+ROOT=$($su -v) 
+
+# Fetch ram info
+TOTAL_RAM=$($bb free -m | $bb awk '/Mem:/{print $2}')
+AVAIL_RAM=$($bb free -m | $bb awk '/Mem:/{print $7}')
+
+# Fetch battery info
+BATT_LVL=$($bb cat /sys/class/power_supply/battery/capacity)
+BATT_CPCTY=$($bb cat /sys/class/power_supply/battery/charge_full_design)
+if [ "$BATT_CPCTY" = "" ]; then
+    BATT_CPCTY=$($dumpsys batterystats | $bb grep Capacity: | $bb awk '{print $2}' | $bb cut -d "," -f 1)
+           
+elif [ "$BATT_CPCTY" -gt "1000000" ]; then
+    BATT_CPCTY=$((BATT_CPCTY / 1000))
+fi
+
+# Fetch XTweak info
+TITLE=$($bb grep name= "${MODPATH}module.prop" | $bb sed "s/name=//")
+VER=$($bb grep version= "${MODPATH}module.prop" | $bb sed "s/version=//")
+CODENAME=$($bb grep codeName= "${MODPATH}module.prop" | $bb sed "s/codeName=//")
+STATUS=$($bb grep Status= "${MODPATH}module.prop" | $bb sed "s/Status=//")
+AUTHOR=$($bb grep author= "${MODPATH}module.prop" | $bb sed "s/author=//")
+
+##############################
+# Logging System Functions
+###############################
+
+# Logging system header
+$bb sleep 3
+$bb awk '{print}' "${MODPATH}xtweak_banner" >> $LOG
+echo "[⚡] POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡] " >> $LOG
+echo "" >> $LOG
+$bb sleep 2
+echo "[*] CHECKING DEVICE INFO..." >> $LOG
+$bb sleep 2
+echo "~ BRAND : $BRAND " >> $LOG
+echo "~ MODEL : $MODEL " >> $LOG
+echo "~ ROM : $ROM " >> $LOG
+echo "~ SYSTEM LANGUAGE : $LANG " >> $LOG
+echo "~ ANDROID : $ANDROID " >> $LOG
+echo "~ API LEVEL : $SDK " >> $LOG
+echo "~ KERNEL : $KERNEL " >> $LOG
+echo "~ KERNEL TYPE : $KERNEL_TYPE " >> $LOG
+echo "~ CPU ARCHITECTURE : $ARCH " >> $LOG
+echo "~ SOC : $SOC " >> $LOG
+echo "~ ROOT METHOD : $ROOT " >> $LOG
+echo "~ TOTAL RAM : $TOTAL_RAM MB " >> $LOG
+echo "~ AVAILABLE RAM : $AVAIL_RAM MB" >> $LOG
+echo "~ BATTERY LEVEL : $BATT_LVL %" >> $LOG
+echo "~ BATTERY CAPACITY : $BATT_CPCTY MAH" >> $LOG
+echo "" >> $LOG
+echo "~ NAME : $TITLE " >> $LOG
+echo "~ VERSION : $VER " >> $LOG
+echo "~ CODENAME : $CODENAME " >> $LOG
+echo "~ STATUS : $STATUS " >> $LOG
+echo "~ AUTHOR : $AUTHOR " >> $LOG
+echo "" >> $LOG
+echo "[*] CURRENT MODE: $M " >> $LOG
+echo "" >> $LOG
+echo "[*] STARTING TWEAKS AT $($bb date) " >> $LOG
+echo "" >> $LOG
+$bb sleep 3
+
+# Logging system footer
+echo "[*] CLEANED VARIOUS JUNK FILES" >> $LOG
+echo "[*] OPTIMIZED VARIOUS DOZE AND GMS PARAMETERS" >> $LOG
+echo "[*] APPLIED CGROUP OPTIMIZATIONS" >> $LOG
+echo "[*] EXECUTED SQLITE OPTIMIZATIONS" >> $LOG
+echo "[*] ZIPALIGNED SYSTEM AND USER APKS" >> $LOG
+echo "[*] APPLIED KERNEL TWEAKS" >> $LOG
+echo "[*] OPTIMIZED CPU VALUES" >> $LOG
+echo "[*] IMPROVED GPU PARAMETERS" >> $LOG
+echo "[*] TWEAKED FS VALUES" >> $LOG
+echo "[*] OPTIMIZED ENTROPY" >> $LOG
+echo "[*] EXECUTED SCHEDULER TWEAKS" >> $LOG
+echo "[*] IMPROVED KERNEL FREEZING AND KERNEL PANIC PARAMETERS" >> $LOG
+echo "[*] DISABLED GPU LOGGING" >> $LOG
+echo "[*] DISABLED RMNET AND LOGGING DAEMONS" >> $LOG
+echo "[*] OPTIMIZED POWER EFFICIENCY" >> $LOG
+echo "" >> $LOG
+echo "[*] ENDED TWEAKS AT $($bb date) " >> $LOG
+echo "" >> $LOG
+}
 
 #############################
 # Main Optimizations Functions
 #############################
 
-accumulator(){
+_accumulator(){
 # Kernel Tweaks
-write "$KERNEL/perf_cpu_time_max_percent" "2"
-write "$KERNEL/sched_autogroup_enabled" "1"
-write "$KERNEL/sched_cfs_boost" "0"
-write "$KERNEL/sched_child_runs_first" "0"
-write "$KERNEL/sched_cstat_aware" "1"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_latency_ns" "5000000"
-write "$KERNEL/sched_migration_cost_ns" "500000"
-write "$KERNEL/sched_min_granularity_ns" "1000000"
-write "$KERNEL/sched_nr_migrate" "256"
-write "$KERNEL/sched_rr_timeslice_ns" "100"
-write "$KERNEL/sched_rt_period_us" "1000000"
-write "$KERNEL/sched_rt_runtime_us" "950000"
-write "$KERNEL/sched_shares_window_ns" "10000000"
-write "$KERNEL/sched_sync_hint_enable" "1"
-write "$KERNEL/sched_time_avg_ms" "1000"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_use_walt_cpu_util" "1"
-write "$KERNEL/sched_use_walt_task_util" "1"
-write "$KERNEL/sched_wakeup_granularity_ns" "2500000"
-write "$KERNEL/sched_walt_cpu_high_irqload" "20000000"
-write "$KERNEL/sched_walt_init_task_load_pct" "10"
-write "$KERNEL/hung_task_timeout_secs" "0"
+write "${kernel}sched_boost" "0"
+write "${kernel}perf_cpu_time_max_percent" "2"
+write "${kernel}sched_autogroup_enabled" "1"
+write "${kernel}sched_cfs_boost" "0"
+write "${kernel}sched_child_runs_first" "0"
+write "${kernel}sched_cstat_aware" "1"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_latency_ns" "5000000"
+write "${kernel}sched_migration_cost_ns" "500000"
+write "${kernel}sched_min_granularity_ns" "1000000"
+write "${kernel}sched_nr_migrate" "256"
+write "${kernel}sched_rr_timeslice_ns" "100"
+write "${kernel}sched_rt_period_us" "1000000"
+write "${kernel}sched_rt_runtime_us" "950000"
+write "${kernel}sched_shares_window_ns" "10000000"
+write "${kernel}sched_sync_hint_enable" "1"
+write "${kernel}sched_time_avg_ms" "1000"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_use_walt_cpu_util" "1"
+write "${kernel}sched_use_walt_task_util" "1"
+write "${kernel}sched_wakeup_granularity_ns" "2500000"
+write "${kernel}sched_walt_cpu_high_irqload" "20000000"
+write "${kernel}sched_walt_init_task_load_pct" "10"
+write "${kernel}hung_task_timeout_secs" "0"
 
 # VM (Virtual Machine) Tweaks
-write "$VM/dirty_background_ratio" "3"
-write "$VM/dirty_ratio" "6"
-write "$VM/dirty_expire_centisecs" "1000"
-write "$VM/dirty_writeback_centisecs" "1000"
-write "$VM/page-cluster" "0"
-write "$VM/reap_mem_on_sigkill" "1"
-write "$VM/stat_interval" "5"
-write "$VM/swappiness" "100"
-write "$VM/overcommit_ratio" "30"
-write "$VM/vfs_cache_pressure" "100"
-write "$VM/extfrag_threshold" "750"
-write "$VM/swap_ratio" "40"
-write "$VM/drop_caches" "3"
-write "$VM/breath_period" "0"
-write "$VM/breath_priority" "-1001"
-write "$VM/memory_plus" "0"
+write "${vm}dirty_background_ratio" "3"
+write "${vm}dirty_ratio" "6"
+write "${vm}dirty_expire_centisecs" "1000"
+write "${vm}dirty_writeback_centisecs" "1000"
+write "${vm}page-cluster" "0"
+write "${vm}reap_mem_on_sigkill" "1"
+write "${vm}stat_interval" "5"
+write "${vm}swappiness" "100"
+write "${vm}overcommit_ratio" "30"
+write "${vm}vfs_cache_pressure" "100"
+write "${vm}extfrag_threshold" "750"
+write "${vm}swap_ratio" "40"
+write "${vm}drop_caches" "3"
+write "${vm}breath_period" "0"
+write "${vm}breath_priority" "-1001"
+write "${vm}memory_plus" "0"
 
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($cat "${cpu}scaling_available_governors")"
+    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -63,21 +347,24 @@ do
         write "${cpu}schedutil/down_rate_limit_us" "5000"
         write "${cpu}schedutil/rate_limit_us" "5000"
         write "${cpu}schedutil/hispeed_load" "99"
-        write "${cpu}schedutil/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
         write "${cpu}interactive/timer_rate" "5000"
         write "${cpu}interactive/min_sample_time" "5000"
         write "${cpu}interactive/go_hispeed_load" "99"
-        write "${cpu}interactive/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     fi
 done
+[ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "Y"
+[ -e "/sys/devices/system/cpu/cpuidle/use_deepest_state" ] && write "/sys/devices/system/cpu/cpuidle/use_deepest_state" "1"
+[ -e "/sys/module/acpuclock_krait/parameters/boost" ] && write "/sys/module/acpuclock_krait/parameters/boost" "N"
 
 # GPU Tweaks
 write "/sys/module/simple_gpu_algorithm/parameters/simple_gpu_activate" "1"
 write "/sys/class/kgsl/kgsl-3d0/devfreq/polling_interval" "10"
-write "/sys/class/kgsl/kgsl-3d0/idle_timer" "62"
+write "/sys/class/kgsl/kgsl-3d0/idle_timer" "50"
 write "/sys/class/kgsl/kgsl-3d0/force_clk_on" "0"
 write "/sys/class/kgsl/kgsl-3d0/max_pwrlevel" "0"
 write "/sys/class/kgsl/kgsl-3d0/default_pwrlevel" "5"
@@ -89,9 +376,15 @@ write "/sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost" "0"
 write "/sys/devices/soc/kgsl-3d0/devfreq/kgsl-3d0/adrenoboost" "0"
 write "/sys/class/kgsl/kgsl-3d0/bus_split" "1"
 write "/sys/class/kgsl/kgsl-3d0/throttling" "1"
+write "/proc/gpufreq/gpufreq_limited_thermal_ignore" "0"
+[ -e "/proc/mali/dvfs_enable" ] && write "/proc/mali/dvfs_enable" "1"
+[ -e "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" ] && write "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" "1"
 
-# Disable Adreno Idler for Accumulator
-write "/sys/module/adreno_idler/parameters/adreno_idler_active" "N"
+# Adreno Idler Tweaks
+write "/sys/module/adreno_idler/parameters/adreno_idler_active" "Y"
+write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "35"
+write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "25"
+write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "10000"
 
 # Tune sched_domain values for better latency and perf
 for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
@@ -110,14 +403,14 @@ write "${sched_domain}wake_idx" "0"
 done
 
 # Tune sched_features for overall userspace improvement
-write "$SCHED_FEATURES" "NO_NEXT_BUDDY"
-write "$SCHED_FEATURES" "TTWU_QUEUE"
-write "$SCHED_FEATURES" "NO_GENTLE_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "NO_NEW_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "ARCH_POWER"
-write "$SCHED_FEATURES" "EAS_PREFER_IDLE"
-write "$SCHED_FEATURES" "ENERGY_AWARE"
-write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
+write "${sched_features}" "NO_NEXT_BUDDY"
+write "${sched_features}" "TTWU_QUEUE"
+write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
+write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+write "${sched_features}" "ARCH_POWER"
+write "${sched_features}" "EAS_PREFER_IDLE"
+write "${sched_features}" "ENERGY_AWARE"
+write "${sched_features}" "NO_EAS_USE_NEED_IDLE"
 
 # Blkio Tweaks
 write "/dev/blkio/blkio.weight" "1000"
@@ -135,30 +428,34 @@ done
 write "/sys/class/typec/port0/port_type" "sink"
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "N"
 
+# LPM Levels Tweaks
+_lpm_levels
+
 # Multi-core powersaving
-if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
-write "/sys/devices/system/cpu/sched_mc_power_savings" "2"
-fi
+[ -e "/sys/devices/system/cpu/sched_mc_power_savings" ] && write "/sys/devices/system/cpu/sched_mc_power_savings" "2"
 
 # Tune raid speed limit
-write "$RAID/speed_limit_max" "14000"
-write "$RAID/speed_limit_min" "7000"
+write "${raid}speed_limit_max" "14000"
+write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "$PTY/max" "4096"
-write "$PTY/min" "2048"
+write "${pty}max" "4096"
+write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "$KEYS/gc_delay" "100"
-write "$KEYS/maxbytes" "20000"
-write "$KEYS/maxkeys" "200" 
+write "${keys}gc_delay" "100"
+write "${keys}maxbytes" "20000"
+write "${keys}maxkeys" "200" 
 
 # FS (File-System) Tweaks
-write "$FS/leases-enable" "1"
-write "$FS/lease-break-time" "7"
-write "$FS/inotify/max_queued_events" "131072"
-write "$FS/inotify/max_user_watches" "131072"
-write "$FS/inotify/max_user_instances" "512"
+write "${fs}leases-enable" "1"
+write "${fs}lease-break-time" "7"
+write "${fs}inotify/max_queued_events" "131072"
+write "${fs}inotify/max_user_watches" "131072"
+write "${fs}inotify/max_user_instances" "512"
+
+# MMC CRC Tweaks
+_mmc_crc
 
 # App launch boost tweak
 write "/sys/module/boost_control/parameters/app_launch_boost_ms" "500"
@@ -190,22 +487,21 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-if [ -e "/system/etc/sysctl.conf" ]; then
-  $mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
-fi
+_disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
 
 # LMK Tweaks
-write "$LMK/minfree" "21816,29088,36360,43632,50904,65448"
-write "$LMK/oom_reaper" "1"
-write "$LMK/batch_kill" "0"
-write "$LMK/quick_select" "0"
-write "$LMK/time_measure" "0"
-write "$LMK/trust_adj_chain" "N"
-write "$LMK/cost" "4096"
-write "$LMK/watermark_scale_factor" "30"
+_lmk_
+write "${lmk}minfree" "21816,29088,36360,43632,50904,65448"
+write "${lmk}oom_reaper" "1"
+write "${lmk}batch_kill" "0"
+write "${lmk}quick_select" "0"
+write "${lmk}time_measure" "0"
+write "${lmk}trust_adj_chain" "N"
+write "${lmk}cost" "4096"
+write "${lmk}watermark_scale_factor" "30"
 
 # Disable Qualcomm per process reclaim for low-range and mid-range devices
 write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
@@ -228,62 +524,7 @@ fi
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-write "/sys/module/bluetooth/parameters/disable_ertm" "Y"
-write "/sys/module/bluetooth/parameters/disable_esco" "Y"
-write "/sys/module/dwc3/parameters/ep_addr_rxdbg_mask" "0"
-write "/sys/module/dwc3/parameters/ep_addr_txdbg_mask" "0"
-write "/sys/module/dwc3_msm/parameters/disable_host_mode" "0"
-write "/sys/module/hid_apple/parameters/fnmode" "0"
-write "/sys/module/hid/parameters/ignore_special_drivers" "0"
-write "/sys/module/hid_magicmouse/parameters/emulate_3button" "N"
-write "/sys/module/hid_magicmouse/parameters/emulate_scroll_wheel" "N"
-write "/sys/module/hid_magicmouse/parameters/scroll_speed" "0"
-write "/sys/module/mdss_fb/parameters/backlight_dimmer" "Y"
-write "/sys/module/otg_wakelock/parameters/enabled" "N"
-write "/sys/module/wakelock/parameters/debug_mask" "0"
-write "/sys/module/userwakelock/parameters/debug_mask" "0"
-write "/sys/module/binder/parameters/debug_mask" "0"
-write "/sys/module/debug/parameters/enable_event_log" "0"
-write "/sys/module/glink/parameters/debug_mask" "0"
-write "/sys/module/ip6_tunnel/parameters/log_ecn_error" "N"
-write "/sys/module/subsystem_restart/parameters/enable_ramdumps" "0"
-write "/sys/module/lowmemorykiller/parameters/debug_level" "0"
-write "/sys/module/msm_show_resume_irq/parameters/debug_mask" "0"
-write "/sys/module/msm_smd_pkt/parameters/debug_mask" "0"
-write "/sys/module/sit/parameters/log_ecn_error" "N"
-write "/sys/module/smp2p/parameters/debug_mask" "0"
-write "/sys/module/usb_bam/parameters/enable_event_log" "0"
-write "/sys/module/printk/parameters/console_suspend" "Y"
-write "/sys/module/printk/parameters/cpu" "N"
-write "/sys/module/printk/parameters/ignore_loglevel" "Y"
-write "/sys/module/printk/parameters/pid" "N"
-write "/sys/module/printk/parameters/time" "N"
-write "/sys/module/service_locator/parameters/enable" "0"
-write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
-for i in $($find /sys/ -name pm_qos_enable); do
-write "${i}" "1"
-done
-for i in $($find /sys/ -name debug_mask); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name debug_level); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ce); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ue); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name enable_event_log); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name log_ecn_error); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name snapshot_crashdumper); do
-write "${i}" "0"
-done
+_disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -291,15 +532,18 @@ $resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
 $resetprop ro.config.ksm.support false
 
+# HWUI Tweaks
+x_hwui
+
 # EXT4 and F2FS Tweaks
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do
-#$mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
+#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do 
-#$mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($cat /proc/mounts | $grep f2fs | $cut -d ' ' -f2); do 
-#$mount -o remount,nobarrier ${f2fs}
+#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -322,19 +566,7 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-for v in 0 1 2 3 4; do
-    stop vendor.qti.hardware.perf@${v}.${v}-service 2>/dev/null
-    stop perf-hal-${v}-${v} 2>/dev/null
-done
-stop vendor.perfservice 2>/dev/null
-stop traced 2>/dev/null
-stop vendor.cnss_diag 2>/dev/null
-stop vendor.tcpdump 2>/dev/null
-stop logd 2>/dev/null
-stop statsd 2>/dev/null
-stop traced 2>/dev/null
-stop oneplus_brain_service 2>/dev/null
-stop perfd 2>/dev/null
+_stop_services
 
 # Better to keep mpdecision alive if you are running out of battery
 start mpdecision 2>/dev/null
@@ -343,8 +575,8 @@ start mpdecision 2>/dev/null
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($cat "${queue}scheduler")
-	for sched in cfq deadline anxiety noop kyber none
+    avail_scheds=$($bb cat "${queue}scheduler")
+	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
 			write "${queue}scheduler" "$sched"
@@ -416,53 +648,55 @@ write "/proc/sys/kernel/random/write_wakeup_threshold" "128"
 write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
-equalizer(){
+_equalizer(){
 # Kernel Tweaks
-write "$KERNEL/perf_cpu_time_max_percent" "5"
-write "$KERNEL/sched_autogroup_enabled" "1"
-write "$KERNEL/sched_cfs_boost" "0"
-write "$KERNEL/sched_child_runs_first" "1"
-write "$KERNEL/sched_cstat_aware" "1"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_latency_ns" "4000000"
-write "$KERNEL/sched_migration_cost_ns" "5000000"
-write "$KERNEL/sched_min_granularity_ns" "500000"
-write "$KERNEL/sched_nr_migrate" "32"
-write "$KERNEL/sched_rr_timeslice_ns" "100"
-write "$KERNEL/sched_rt_period_us" "1000000"
-write "$KERNEL/sched_rt_runtime_us" "950000"
-write "$KERNEL/sched_shares_window_ns" "10000000"
-write "$KERNEL/sched_sync_hint_enable" "1"
-write "$KERNEL/sched_time_avg_ms" "1000"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_use_walt_cpu_util" "1"
-write "$KERNEL/sched_use_walt_task_util" "1"
-write "$KERNEL/sched_wakeup_granularity_ns" "2000000"
-write "$KERNEL/sched_walt_cpu_high_irqload" "20000000"
-write "$KERNEL/sched_walt_init_task_load_pct" "20"
-write "$KERNEL/hung_task_timeout_secs" "0"
+write "${kernel}sched_boost" "0"
+write "${kernel}perf_cpu_time_max_percent" "5"
+write "${kernel}sched_autogroup_enabled" "1"
+write "${kernel}sched_cfs_boost" "0"
+write "${kernel}sched_child_runs_first" "1"
+write "${kernel}sched_cstat_aware" "1"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_latency_ns" "4000000"
+write "${kernel}sched_migration_cost_ns" "5000000"
+write "${kernel}sched_min_granularity_ns" "500000"
+write "${kernel}sched_nr_migrate" "32"
+write "${kernel}sched_rr_timeslice_ns" "100"
+write "${kernel}sched_rt_period_us" "1000000"
+write "${kernel}sched_rt_runtime_us" "950000"
+write "${kernel}sched_shares_window_ns" "10000000"
+write "${kernel}sched_sync_hint_enable" "1"
+write "${kernel}sched_time_avg_ms" "1000"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_use_walt_cpu_util" "1"
+write "${kernel}sched_use_walt_task_util" "1"
+write "${kernel}sched_wakeup_granularity_ns" "2000000"
+write "${kernel}sched_walt_cpu_high_irqload" "20000000"
+write "${kernel}sched_walt_init_task_load_pct" "20"
+write "${kernel}hung_task_timeout_secs" "0"
+
 # VM (Virtual Machine) Tweaks
-write "$VM/dirty_background_ratio" "10"
-write "$VM/dirty_ratio" "30"
-write "$VM/dirty_expire_centisecs" "3000"
-write "$VM/dirty_writeback_centisecs" "3000"
-write "$VM/page-cluster" "0"
-write "$VM/reap_mem_on_sigkill" "1"
-write "$VM/stat_interval" "5"
-write "$VM/swappiness" "100"
-write "$VM/overcommit_ratio" "30"
-write "$VM/vfs_cache_pressure" "100"
-write "$VM/extfrag_threshold" "750"
-write "$VM/swap_ratio" "40"
-write "$VM/drop_caches" "3"
-write "$VM/breath_period" "0"
-write "$VM/breath_priority" "-1001"
-write "$VM/memory_plus" "0"
+write "${vm}dirty_background_ratio" "10"
+write "${vm}dirty_ratio" "30"
+write "${vm}dirty_expire_centisecs" "3000"
+write "${vm}dirty_writeback_centisecs" "3000"
+write "${vm}page-cluster" "0"
+write "${vm}reap_mem_on_sigkill" "1"
+write "${vm}stat_interval" "5"
+write "${vm}swappiness" "100"
+write "${vm}overcommit_ratio" "30"
+write "${vm}vfs_cache_pressure" "100"
+write "${vm}extfrag_threshold" "750"
+write "${vm}swap_ratio" "40"
+write "${vm}drop_caches" "3"
+write "${vm}breath_period" "0"
+write "${vm}breath_priority" "-1001"
+write "${vm}memory_plus" "0"
 
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($cat "${cpu}scaling_available_governors")"
+    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -470,21 +704,24 @@ do
         write "${cpu}schedutil/down_rate_limit_us" "16000"
         write "${cpu}schedutil/rate_limit_us" "4000"
         write "${cpu}schedutil/hispeed_load" "90"
-        write "${cpu}schedutil/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
         write "${cpu}interactive/timer_rate" "4000"
         write "${cpu}interactive/min_sample_time" "4000"
         write "${cpu}interactive/go_hispeed_load" "90"	
-        write "${cpu}interactive/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     fi
 done
+[ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "Y"
+[ -e "/sys/devices/system/cpu/cpuidle/use_deepest_state" ] && write "/sys/devices/system/cpu/cpuidle/use_deepest_state" "1"
+[ -e "/sys/module/acpuclock_krait/parameters/boost" ] && write "/sys/module/acpuclock_krait/parameters/boost" "N"
 
 # GPU Tweaks
 write "/sys/module/simple_gpu_algorithm/parameters/simple_gpu_activate" "1"
 write "/sys/class/kgsl/kgsl-3d0/devfreq/polling_interval" "10"
-write "/sys/class/kgsl/kgsl-3d0/idle_timer" "62"
+write "/sys/class/kgsl/kgsl-3d0/idle_timer" "200"
 write "/sys/class/kgsl/kgsl-3d0/force_clk_on" "0"
 write "/sys/class/kgsl/kgsl-3d0/max_pwrlevel" "0"
 write "/sys/class/kgsl/kgsl-3d0/default_pwrlevel" "4"
@@ -496,12 +733,15 @@ write "/sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost" "1"
 write "/sys/devices/soc/kgsl-3d0/devfreq/kgsl-3d0/adrenoboost" "1"
 write "/sys/class/kgsl/kgsl-3d0/bus_split" "1"
 write "/sys/class/kgsl/kgsl-3d0/throttling" "0"
+write "/proc/gpufreq/gpufreq_limited_thermal_ignore" "0"
+[ -e "/proc/mali/dvfs_enable" ] && write "/proc/mali/dvfs_enable" "1"
+[ -e "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" ] && write "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" "1"
 
 # Adreno Idler Tweaks
 write "/sys/module/adreno_idler/parameters/adreno_idler_active" "Y"
+write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "6000"
 write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "25"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "15"
-write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "5000"
 
 # Tune sched_domain values for better latency and perf
 for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
@@ -520,14 +760,14 @@ write "${sched_domain}wake_idx" "0"
 done
 
 # Tune sched_features for overall userspace improvement
-write "$SCHED_FEATURES" "NO_NEXT_BUDDY"
-write "$SCHED_FEATURES" "TTWU_QUEUE"
-write "$SCHED_FEATURES" "NO_GENTLE_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "NO_NEW_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "ARCH_POWER"
-write "$SCHED_FEATURES" "EAS_PREFER_IDLE"
-write "$SCHED_FEATURES" "ENERGY_AWARE"
-write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
+write "${sched_features}" "NO_NEXT_BUDDY"
+write "${sched_features}" "TTWU_QUEUE"
+write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
+write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+write "${sched_features}" "ARCH_POWER"
+write "${sched_features}" "EAS_PREFER_IDLE"
+write "${sched_features}" "ENERGY_AWARE"
+write "${sched_features}" "NO_EAS_USE_NEED_IDLE"
 
 # Enable UFS powersaving
 for ufs in /sys/devices/soc/*/
@@ -539,30 +779,36 @@ done
 write "/sys/class/typec/port0/port_type" "sink"
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "N"
 
+# LPM Levels Tweaks
+_lpm_levels
+
 # Multi-core powersaving
 if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
 write "/sys/devices/system/cpu/sched_mc_power_savings" "1"
 fi
 
 # Tune raid speed limit
-write "$RAID/speed_limit_max" "14000"
-write "$RAID/speed_limit_min" "7000"
+write "${raid}speed_limit_max" "14000"
+write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "$PTY/max" "4096"
-write "$PTY/min" "2048"
+write "${pty}max" "4096"
+write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "$KEYS/gc_delay" "100"
-write "$KEYS/maxbytes" "20000"
-write "$KEYS/maxkeys" "200"
+write "${keys}gc_delay" "100"
+write "${keys}maxbytes" "20000"
+write "${keys}maxkeys" "200"
 
 # FS (File-System) Tweaks
-write "$FS/leases-enable" "1"
-write "$FS/lease-break-time" "7"
-write "$FS/inotify/max_queued_events" "131072"
-write "$FS/inotify/max_user_watches" "131072"
-write "$FS/inotify/max_user_instances" "512"
+write "${fs}leases-enable" "1"
+write "${fs}lease-break-time" "7"
+write "${fs}inotify/max_queued_events" "131072"
+write "${fs}inotify/max_user_watches" "131072"
+write "${fs}inotify/max_user_instances" "512"
+
+# MMC CRC Tweaks
+_mmc_crc
 
 # Blkio Tweaks
 write "/dev/blkio/blkio.weight" "1000"
@@ -600,22 +846,20 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-if [ -e "/system/etc/sysctl.conf" ]; then
-  $mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
-fi
+_disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
 
 # LMK Tweaks
-write "$LMK/minfree" "21816,29088,36360,43632,50904,65448"
-write "$LMK/oom_reaper" "1"
-write "$LMK/batch_kill" "0"
-write "$LMK/quick_select" "0"
-write "$LMK/time_measure" "0"
-write "$LMK/trust_adj_chain" "N"
-write "$LMK/cost" "4096"
-write "$LMK/watermark_scale_factor" "30"
+write "${lmk}minfree" "21816,29088,36360,43632,50904,65448"
+write "${lmk}oom_reaper" "1"
+write "${lmk}batch_kill" "0"
+write "${lmk}quick_select" "0"
+write "${lmk}time_measure" "0"
+write "${lmk}trust_adj_chain" "N"
+write "${lmk}cost" "4096"
+write "${lmk}watermark_scale_factor" "30"
 
 # Disable Qualcomm per process reclaim for low-range and mid-range devices
 write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
@@ -638,62 +882,7 @@ fi
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-write "/sys/module/bluetooth/parameters/disable_ertm" "Y"
-write "/sys/module/bluetooth/parameters/disable_esco" "Y"
-write "/sys/module/dwc3/parameters/ep_addr_rxdbg_mask" "0"
-write "/sys/module/dwc3/parameters/ep_addr_txdbg_mask" "0"
-write "/sys/module/dwc3_msm/parameters/disable_host_mode" "0"
-write "/sys/module/hid_apple/parameters/fnmode" "0"
-write "/sys/module/hid/parameters/ignore_special_drivers" "0"
-write "/sys/module/hid_magicmouse/parameters/emulate_3button" "N"
-write "/sys/module/hid_magicmouse/parameters/emulate_scroll_wheel" "N"
-write "/sys/module/hid_magicmouse/parameters/scroll_speed" "0"
-write "/sys/module/mdss_fb/parameters/backlight_dimmer" "Y"
-write "/sys/module/otg_wakelock/parameters/enabled" "N"
-write "/sys/module/wakelock/parameters/debug_mask" "0"
-write "/sys/module/userwakelock/parameters/debug_mask" "0"
-write "/sys/module/binder/parameters/debug_mask" "0"
-write "/sys/module/debug/parameters/enable_event_log" "0"
-write "/sys/module/glink/parameters/debug_mask" "0"
-write "/sys/module/ip6_tunnel/parameters/log_ecn_error" "N"
-write "/sys/module/subsystem_restart/parameters/enable_ramdumps" "0"
-write "/sys/module/lowmemorykiller/parameters/debug_level" "0"
-write "/sys/module/msm_show_resume_irq/parameters/debug_mask" "0"
-write "/sys/module/msm_smd_pkt/parameters/debug_mask" "0"
-write "/sys/module/sit/parameters/log_ecn_error" "N"
-write "/sys/module/smp2p/parameters/debug_mask" "0"
-write "/sys/module/usb_bam/parameters/enable_event_log" "0"
-write "/sys/module/printk/parameters/console_suspend" "Y"
-write "/sys/module/printk/parameters/cpu" "N"
-write "/sys/module/printk/parameters/ignore_loglevel" "Y"
-write "/sys/module/printk/parameters/pid" "N"
-write "/sys/module/printk/parameters/time" "N"
-write "/sys/module/service_locator/parameters/enable" "0"
-write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
-for i in $($find /sys/ -name pm_qos_enable); do
-write "${i}" "1"
-done
-for i in $($find /sys/ -name debug_mask); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name debug_level); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ce); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ue); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name enable_event_log); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name log_ecn_error); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name snapshot_crashdumper); do
-write "${i}" "0"
-done
+_disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -701,15 +890,18 @@ $resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
 $resetprop ro.config.ksm.support false
 
+# HWUI Tweaks
+x_hwui
+
 # EXT4 and F2FS Tweaks
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do
-#$mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
+#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do 
-#$mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($cat /proc/mounts | $grep f2fs | $cut -d ' ' -f2); do 
-#$mount -o remount,nobarrier ${f2fs}
+#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -732,27 +924,14 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-for v in 0 1 2 3 4; do
-    stop vendor.qti.hardware.perf@${v}.${v}-service 2>/dev/null
-    stop perf-hal-${v}-${v} 2>/dev/null
-done
-stop mpdecision 2>/dev/null
-stop vendor.perfservice 2>/dev/null
-stop traced 2>/dev/null
-stop vendor.cnss_diag 2>/dev/null
-stop vendor.tcpdump 2>/dev/null
-stop logd 2>/dev/null
-stop statsd 2>/dev/null
-stop traced 2>/dev/null
-stop oneplus_brain_service 2>/dev/null
-stop perfd 2>/dev/null
+_stop_services
 
 # I/O
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($cat "${queue}scheduler")
-	for sched in cfq deadline anxiety noop kyber none
+    avail_scheds=$($bb cat "${queue}scheduler")
+	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
 			write "${queue}scheduler" "$sched"
@@ -824,54 +1003,55 @@ write "/proc/sys/kernel/random/write_wakeup_threshold" "256"
 write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
-potency(){
+_potency(){
 # Kernel Tweaks
-write "$KERNEL/perf_cpu_time_max_percent" "3"
-write "$KERNEL/sched_autogroup_enabled" "1"
-write "$KERNEL/sched_cfs_boost" "0"
-write "$KERNEL/sched_child_runs_first" "1"
-write "$KERNEL/sched_cstat_aware" "1"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_latency_ns" "1000000"
-write "$KERNEL/sched_migration_cost_ns" "5000000"
-write "$KERNEL/sched_min_granularity_ns" "100000"
-write "$KERNEL/sched_nr_migrate" "16"
-write "$KERNEL/sched_rr_timeslice_ns" "100"
-write "$KERNEL/sched_rt_period_us" "1000000"
-write "$KERNEL/sched_rt_runtime_us" "950000"
-write "$KERNEL/sched_shares_window_ns" "10000000"
-write "$KERNEL/sched_sync_hint_enable" "1"
-write "$KERNEL/sched_time_avg_ms" "1000"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_use_walt_cpu_util" "1"
-write "$KERNEL/sched_use_walt_task_util" "1"
-write "$KERNEL/sched_wakeup_granularity_ns" "500000"
-write "$KERNEL/sched_walt_cpu_high_irqload" "20000000"
-write "$KERNEL/sched_walt_init_task_load_pct" "20"
-write "$KERNEL/hung_task_timeout_secs" "0"
+write "${kernel}sched_boost" "0"
+write "${kernel}perf_cpu_time_max_percent" "3"
+write "${kernel}sched_autogroup_enabled" "1"
+write "${kernel}sched_cfs_boost" "0"
+write "${kernel}sched_child_runs_first" "1"
+write "${kernel}sched_cstat_aware" "1"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_latency_ns" "1000000"
+write "${kernel}sched_migration_cost_ns" "5000000"
+write "${kernel}sched_min_granularity_ns" "100000"
+write "${kernel}sched_nr_migrate" "16"
+write "${kernel}sched_rr_timeslice_ns" "100"
+write "${kernel}sched_rt_period_us" "1000000"
+write "${kernel}sched_rt_runtime_us" "950000"
+write "${kernel}sched_shares_window_ns" "10000000"
+write "${kernel}sched_sync_hint_enable" "1"
+write "${kernel}sched_time_avg_ms" "1000"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_use_walt_cpu_util" "1"
+write "${kernel}sched_use_walt_task_util" "1"
+write "${kernel}sched_wakeup_granularity_ns" "500000"
+write "${kernel}sched_walt_cpu_high_irqload" "20000000"
+write "${kernel}sched_walt_init_task_load_pct" "20"
+write "${kernel}hung_task_timeout_secs" "0"
 
 # VM (Virtual Machine) Tweaks
-write "$VM/dirty_background_ratio" "6"
-write "$VM/dirty_ratio" "30"
-write "$VM/dirty_expire_centisecs" "3000"
-write "$VM/dirty_writeback_centisecs" "3000"
-write "$VM/page-cluster" "0"
-write "$VM/reap_mem_on_sigkill" "1"
-write "$VM/stat_interval" "5"
-write "$VM/swappiness" "100"
-write "$VM/overcommit_ratio" "30"
-write "$VM/vfs_cache_pressure" "200"
-write "$VM/extfrag_threshold" "750"
-write "$VM/swap_ratio" "40"
-write "$VM/drop_caches" "3"
-write "$VM/breath_period" "0"
-write "$VM/breath_priority" "-1001"
-write "$VM/memory_plus" "0"
+write "${vm}dirty_background_ratio" "6"
+write "${vm}dirty_ratio" "30"
+write "${vm}dirty_expire_centisecs" "3000"
+write "${vm}dirty_writeback_centisecs" "3000"
+write "${vm}page-cluster" "0"
+write "${vm}reap_mem_on_sigkill" "1"
+write "${vm}stat_interval" "5"
+write "${vm}swappiness" "100"
+write "${vm}overcommit_ratio" "30"
+write "${vm}vfs_cache_pressure" "200"
+write "${vm}extfrag_threshold" "750"
+write "${vm}swap_ratio" "40"
+write "${vm}drop_caches" "3"
+write "${vm}breath_period" "0"
+write "${vm}breath_priority" "-1001"
+write "${vm}memory_plus" "0"
 
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($cat "${cpu}scaling_available_governors")"
+    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -879,16 +1059,19 @@ do
         write "${cpu}schedutil/down_rate_limit_us" "0"
         write "${cpu}schedutil/rate_limit_us" "0"
         write "${cpu}schedutil/hispeed_load" "85"
-        write "${cpu}schedutil/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
         write "${cpu}interactive/timer_rate" "0"
         write "${cpu}interactive/min_sample_time" "0"
         write "${cpu}interactive/go_hispeed_load" "85"
-        write "${cpu}interactive/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     fi
 done
+[ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "N"
+[ -e "/sys/devices/system/cpu/cpuidle/use_deepest_state" ] && write "/sys/devices/system/cpu/cpuidle/use_deepest_state" "1"
+[ -e "/sys/module/acpuclock_krait/parameters/boost" ] && write "/sys/module/acpuclock_krait/parameters/boost" "Y"
 
 # GPU Tweaks
 write "/sys/module/simple_gpu_algorithm/parameters/simple_gpu_activate" "1"
@@ -905,12 +1088,15 @@ write "/sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost" "3"
 write "/sys/devices/soc/kgsl-3d0/devfreq/kgsl-3d0/adrenoboost" "3"
 write "/sys/class/kgsl/kgsl-3d0/bus_split" "0"
 write "/sys/class/kgsl/kgsl-3d0/throttling" "0"
+write "/proc/gpufreq/gpufreq_limited_thermal_ignore" "1"
+[ -e "/proc/mali/dvfs_enable" ] && write "/proc/mali/dvfs_enable" "1"
+[ -e "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" ] && write "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" "1"
 
 # Adreno Idler Tweaks
 write "/sys/module/adreno_idler/parameters/adreno_idler_active" "Y"
-write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "25"
+write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "15"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "15"
-write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "5000"
+write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "4000"
 
 # Tune sched_domain values for better latency and perf
 for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
@@ -929,14 +1115,14 @@ write "${sched_domain}wake_idx" "0"
 done
 
 # Tune sched_features for overall userspace improvement 
-write "$SCHED_FEATURES" "NO_NEXT_BUDDY"
-write "$SCHED_FEATURES" "TTWU_QUEUE"
-write "$SCHED_FEATURES" "NO_GENTLE_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "NO_NEW_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "ARCH_POWER"
-write "$SCHED_FEATURES" "EAS_PREFER_IDLE"
-write "$SCHED_FEATURES" "ENERGY_AWARE"
-write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
+write "${sched_features}" "NO_NEXT_BUDDY"
+write "${sched_features}" "TTWU_QUEUE"
+write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
+write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+write "${sched_features}" "ARCH_POWER"
+write "${sched_features}" "EAS_PREFER_IDLE"
+write "${sched_features}" "ENERGY_AWARE"
+write "${sched_features}" "NO_EAS_USE_NEED_IDLE"
 
 # Enable UFS powersaving
 for ufs in /sys/devices/soc/*/
@@ -947,30 +1133,36 @@ write "${ufs}hibern8_on_idle_enable" "0"
 done
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "Y"
 
+# LPM Levels Tweaks
+_lpm_levels
+
 # Multi-core powersaving
 if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
 write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
 fi
 
 # Tune raid speed limit
-write "$RAID/speed_limit_max" "14000"
-write "$RAID/speed_limit_min" "7000"
+write "${raid}speed_limit_max" "14000"
+write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "$PTY/max" "4096"
-write "$PTY/min" "2048"
+write "${pty}max" "4096"
+write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "$KEYS/gc_delay" "100"
-write "$KEYS/maxbytes" "20000"
-write "$KEYS/maxkeys" "200" 
+write "${keys}gc_delay" "100"
+write "${keys}maxbytes" "20000"
+write "${keys}maxkeys" "200" 
 
 # FS (File-System) Tweaks
-write "$FS/leases-enable" "1"
-write "$FS/lease-break-time" "7"
-write "$FS/inotify/max_queued_events" "131072"
-write "$FS/inotify/max_user_watches" "131072"
-write "$FS/inotify/max_user_instances" "512"
+write "${fs}leases-enable" "1"
+write "${fs}lease-break-time" "7"
+write "${fs}inotify/max_queued_events" "131072"
+write "${fs}inotify/max_user_watches" "131072"
+write "${fs}inotify/max_user_instances" "512"
+
+# MMC CRC Tweaks
+_mmc_crc
 
 # Blkio Tweaks
 write "/dev/blkio/blkio.weight" "1000"
@@ -1008,22 +1200,20 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-if [ -e "/system/etc/sysctl.conf" ]; then
-  $mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
-fi
+_disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
 
 # LMK Tweaks
-write "$LMK/minfree" "21816,29088,36360,43632,50904,65448"
-write "$LMK/oom_reaper" "1"
-write "$LMK/batch_kill" "0"
-write "$LMK/quick_select" "0"
-write "$LMK/time_measure" "0"
-write "$LMK/trust_adj_chain" "N"
-write "$LMK/cost" "4096"
-write "$LMK/watermark_scale_factor" "30"
+write "${lmk}minfree" "21816,29088,36360,43632,50904,65448"
+write "${lmk}oom_reaper" "1"
+write "${lmk}batch_kill" "0"
+write "${lmk}quick_select" "0"
+write "${lmk}time_measure" "0"
+write "${lmk}trust_adj_chain" "N"
+write "${lmk}cost" "4096"
+write "${lmk}watermark_scale_factor" "30"
 
 # Disable Qualcomm per process reclaim for low-range and mid-range devices
 write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
@@ -1046,78 +1236,26 @@ fi
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-write "/sys/module/bluetooth/parameters/disable_ertm" "Y"
-write "/sys/module/bluetooth/parameters/disable_esco" "Y"
-write "/sys/module/dwc3/parameters/ep_addr_rxdbg_mask" "0"
-write "/sys/module/dwc3/parameters/ep_addr_txdbg_mask" "0"
-write "/sys/module/dwc3_msm/parameters/disable_host_mode" "0"
-write "/sys/module/hid_apple/parameters/fnmode" "0"
-write "/sys/module/hid/parameters/ignore_special_drivers" "0"
-write "/sys/module/hid_magicmouse/parameters/emulate_3button" "N"
-write "/sys/module/hid_magicmouse/parameters/emulate_scroll_wheel" "N"
-write "/sys/module/hid_magicmouse/parameters/scroll_speed" "0"
-write "/sys/module/mdss_fb/parameters/backlight_dimmer" "Y"
-write "/sys/module/otg_wakelock/parameters/enabled" "N"
-write "/sys/module/wakelock/parameters/debug_mask" "0"
-write "/sys/module/userwakelock/parameters/debug_mask" "0"
-write "/sys/module/binder/parameters/debug_mask" "0"
-write "/sys/module/debug/parameters/enable_event_log" "0"
-write "/sys/module/glink/parameters/debug_mask" "0"
-write "/sys/module/ip6_tunnel/parameters/log_ecn_error" "N"
-write "/sys/module/subsystem_restart/parameters/enable_ramdumps" "0"
-write "/sys/module/lowmemorykiller/parameters/debug_level" "0"
-write "/sys/module/msm_show_resume_irq/parameters/debug_mask" "0"
-write "/sys/module/msm_smd_pkt/parameters/debug_mask" "0"
-write "/sys/module/sit/parameters/log_ecn_error" "N"
-write "/sys/module/smp2p/parameters/debug_mask" "0"
-write "/sys/module/usb_bam/parameters/enable_event_log" "0"
-write "/sys/module/printk/parameters/console_suspend" "Y"
-write "/sys/module/printk/parameters/cpu" "N"
-write "/sys/module/printk/parameters/ignore_loglevel" "Y"
-write "/sys/module/printk/parameters/pid" "N"
-write "/sys/module/printk/parameters/time" "N"
-write "/sys/module/service_locator/parameters/enable" "0"
-write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
-for i in $($find /sys/ -name pm_qos_enable); do
-write "${i}" "1"
-done
-for i in $($find /sys/ -name debug_mask); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name debug_level); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ce); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ue); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name enable_event_log); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name log_ecn_error); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name snapshot_crashdumper); do
-write "${i}" "0"
-done
+_disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
-resetprop ro.config.uksm.support false
+$resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
-resetprop ro.config.ksm.support false
+$resetprop ro.config.ksm.support false
+
+# HWUI Tweaks
+x_hwui
 
 # EXT4 and F2FS Tweaks
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do
-#$mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
+#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do 
-#$mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($cat /proc/mounts | $grep f2fs | $cut -d ' ' -f2); do 
-#$mount -o remount,nobarrier ${f2fs}
+#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -1140,27 +1278,14 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-for v in 0 1 2 3 4; do
-    stop vendor.qti.hardware.perf@$v.$v-service 2>/dev/null
-    stop perf-hal-${v}-${v} 2>/dev/null
-done
-stop mpdecision 2>/dev/null
-stop vendor.perfservice 2>/dev/null
-stop traced 2>/dev/null
-stop vendor.cnss_diag 2>/dev/null
-stop vendor.tcpdump 2>/dev/null
-stop logd 2>/dev/null
-stop statsd 2>/dev/null
-stop traced 2>/dev/null
-stop oneplus_brain_service 2>/dev/null
-stop perfd 2>/dev/null
+_stop_services
 
 # I/O
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($cat "${queue}scheduler")
-	for sched in cfq deadline anxiety noop kyber none
+    avail_scheds=$($bb cat "${queue}scheduler")
+	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
 			write "${queue}scheduler" "$sched"
@@ -1232,54 +1357,55 @@ write "/proc/sys/kernel/random/write_wakeup_threshold" "256"
 write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
-output(){
+_output(){
 # Kernel Tweaks
-write "$KERNEL/perf_cpu_time_max_percent" "20"
-write "$KERNEL/sched_autogroup_enabled" "0"
-write "$KERNEL/sched_cfs_boost" "1"
-write "$KERNEL/sched_child_runs_first" "0"
-write "$KERNEL/sched_cstat_aware" "1"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_latency_ns" "10000000"
-write "$KERNEL/sched_migration_cost_ns" "5000000"
-write "$KERNEL/sched_min_granularity_ns" "1666666"
-write "$KERNEL/sched_nr_migrate" "128"
-write "$KERNEL/sched_rr_timeslice_ns" "100"
-write "$KERNEL/sched_rt_period_us" "1000000"
-write "$KERNEL/sched_rt_runtime_us" "950000"
-write "$KERNEL/sched_shares_window_ns" "10000000"
-write "$KERNEL/sched_sync_hint_enable" "1"
-write "$KERNEL/sched_time_avg_ms" "1000"
-write "$KERNEL/sched_tunable_scaling" "0"
-write "$KERNEL/sched_use_walt_cpu_util" "1"
-write "$KERNEL/sched_use_walt_task_util" "1"
-write "$KERNEL/sched_wakeup_granularity_ns" "5000000"
-write "$KERNEL/sched_walt_cpu_high_irqload" "20000000"
-write "$KERNEL/sched_walt_init_task_load_pct" "20"
-write "$KERNEL/hung_task_timeout_secs" "0"
+write "${kernel}sched_boost" "0"
+write "${kernel}perf_cpu_time_max_percent" "20"
+write "${kernel}sched_autogroup_enabled" "0"
+write "${kernel}sched_cfs_boost" "1"
+write "${kernel}sched_child_runs_first" "0"
+write "${kernel}sched_cstat_aware" "1"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_latency_ns" "10000000"
+write "${kernel}sched_migration_cost_ns" "5000000"
+write "${kernel}sched_min_granularity_ns" "1666666"
+write "${kernel}sched_nr_migrate" "128"
+write "${kernel}sched_rr_timeslice_ns" "100"
+write "${kernel}sched_rt_period_us" "1000000"
+write "${kernel}sched_rt_runtime_us" "950000"
+write "${kernel}sched_shares_window_ns" "10000000"
+write "${kernel}sched_sync_hint_enable" "1"
+write "${kernel}sched_time_avg_ms" "1000"
+write "${kernel}sched_tunable_scaling" "0"
+write "${kernel}sched_use_walt_cpu_util" "1"
+write "${kernel}sched_use_walt_task_util" "1"
+write "${kernel}sched_wakeup_granularity_ns" "5000000"
+write "${kernel}sched_walt_cpu_high_irqload" "20000000"
+write "${kernel}sched_walt_init_task_load_pct" "20"
+write "${kernel}hung_task_timeout_secs" "0"
 
 # VM (Virtual Machine) Tweaks
-write "$VM/dirty_background_ratio" "15"
-write "$VM/dirty_ratio" "30"
-write "$VM/dirty_expire_centisecs" "3000"
-write "$VM/dirty_writeback_centisecs" "3000"
-write "$VM/page-cluster" "0"
-write "$VM/reap_mem_on_sigkill" "1"
-write "$VM/stat_interval" "5"
-write "$VM/swappiness" "100"
-write "$VM/overcommit_ratio" "30"
-write "$VM/vfs_cache_pressure" "80"
-write "$VM/extfrag_threshold" "750"
-write "$VM/swap_ratio" "40"
-write "$VM/drop_caches" "3"
-write "$VM/breath_period" "0"
-write "$VM/breath_priority" "-1001"
-write "$VM/memory_plus" "0"
+write "${vm}dirty_background_ratio" "15"
+write "${vm}dirty_ratio" "30"
+write "${vm}dirty_expire_centisecs" "3000"
+write "${vm}dirty_writeback_centisecs" "3000"
+write "${vm}page-cluster" "0"
+write "${vm}reap_mem_on_sigkill" "1"
+write "${vm}stat_interval" "5"
+write "${vm}swappiness" "100"
+write "${vm}overcommit_ratio" "30"
+write "${vm}vfs_cache_pressure" "80"
+write "${vm}extfrag_threshold" "750"
+write "${vm}swap_ratio" "40"
+write "${vm}drop_caches" "3"
+write "${vm}breath_period" "0"
+write "${vm}breath_priority" "-1001"
+write "${vm}memory_plus" "0"
 
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($cat "${cpu}scaling_available_governors")"
+    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -1287,16 +1413,19 @@ do
         write "${cpu}schedutil/down_rate_limit_us" "40000"
         write "${cpu}schedutil/rate_limit_us" "10000"
         write "${cpu}schedutil/hispeed_load" "85"
-        write "${cpu}schedutil/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
         write "${cpu}interactive/timer_rate" "10000"
         write "${cpu}interactive/min_sample_time" "10000"
         write "${cpu}interactive/go_hispeed_load" "85"
-        write "${cpu}interactive/hispeed_freq" "$($cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
     fi
 done
+[ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "N"
+[ -e "/sys/devices/system/cpu/cpuidle/use_deepest_state" ] && write "/sys/devices/system/cpu/cpuidle/use_deepest_state" "1"
+[ -e "/sys/module/acpuclock_krait/parameters/boost" ] && write "/sys/module/acpuclock_krait/parameters/boost" "Y"
 
 # GPU Tweaks
 write "/sys/module/simple_gpu_algorithm/parameters/simple_gpu_activate" "1"
@@ -1313,12 +1442,15 @@ write "/sys/class/kgsl/kgsl-3d0/devfreq/adrenoboost" "2"
 write "/sys/devices/soc/kgsl-3d0/devfreq/kgsl-3d0/adrenoboost" "2"
 write "/sys/class/kgsl/kgsl-3d0/bus_split" "0"
 write "/sys/class/kgsl/kgsl-3d0/throttling" "0"
+write "/proc/gpufreq/gpufreq_limited_thermal_ignore" "1"
+[ -e "/proc/mali/dvfs_enable" ] && write "/proc/mali/dvfs_enable" "1"
+[ -e "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" ] && write "/sys/module/pvrsrvkm/parameters/gpu_dvfs_enable" "1"
 
 # Adreno Idler Tweaks
 write "/sys/module/adreno_idler/parameters/adreno_idler_active" "Y"
-write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "25"
+write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "15"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "15"
-write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "5000"
+write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "4500"
 
 # Tune sched_domain values for better latency and perf
 for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
@@ -1337,14 +1469,14 @@ write "${sched_domain}wake_idx" "0"
 done
 
 # Tune sched_features for overall userspace improvement 
-write "$SCHED_FEATURES" "NO_NEXT_BUDDY"
-write "$SCHED_FEATURES" "TTWU_QUEUE"
-write "$SCHED_FEATURES" "NO_GENTLE_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "NO_NEW_FAIR_SLEEPERS"
-write "$SCHED_FEATURES" "ARCH_POWER"
-write "$SCHED_FEATURES" "EAS_PREFER_IDLE"
-write "$SCHED_FEATURES" "ENERGY_AWARE"
-write "$SCHED_FEATURES" "NO_EAS_USE_NEED_IDLE"
+write "${sched_features}" "NO_NEXT_BUDDY"
+write "${sched_features}" "TTWU_QUEUE"
+write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
+write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+write "${sched_features}" "ARCH_POWER"
+write "${sched_features}" "EAS_PREFER_IDLE"
+write "${sched_features}" "ENERGY_AWARE"
+write "${sched_features}" "NO_EAS_USE_NEED_IDLE"
 
 # Enable UFS powersaving
 for ufs in /sys/devices/soc/*/
@@ -1355,30 +1487,36 @@ write "${ufs}hibern8_on_idle_enable" "0"
 done
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "Y"
 
+# LPM Levels Tweaks
+_lpm_levels
+
 # Multi-core powersaving
 if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
 write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
 fi
 
 # Tune raid speed limit
-write "$RAID/speed_limit_max" "14000"
-write "$RAID/speed_limit_min" "7000"
+write "${raid}speed_limit_max" "14000"
+write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "$PTY/max" "4096"
-write "$PTY/min" "2048"
+write "${pty}max" "4096"
+write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "$KEYS/gc_delay" "100"
-write "$KEYS/maxbytes" "20000"
-write "$KEYS/maxkeys" "200"
+write "${keys}gc_delay" "100"
+write "${keys}maxbytes" "20000"
+write "${keys}maxkeys" "200"
 
 # FS (File-System) Tweaks
-write "$FS/leases-enable" "1"
-write "$FS/lease-break-time" "7"
-write "$FS/inotify/max_queued_events" "131072"
-write "$FS/inotify/max_user_watches" "131072"
-write "$FS/inotify/max_user_instances" "512"
+write "${fs}leases-enable" "1"
+write "${fs}lease-break-time" "7"
+write "${fs}inotify/max_queued_events" "131072"
+write "${fs}inotify/max_user_watches" "131072"
+write "${fs}inotify/max_user_instances" "512"
+
+# MMC CRC Tweaks
+_mmc_crc
 
 # Blkio Tweaks
 write "/dev/blkio/blkio.weight" "1000"
@@ -1416,22 +1554,20 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-if [ -e "/system/etc/sysctl.conf" ]; then
-  $mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
-fi
+_disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
 
 # LMK Tweaks
-write "$LMK/minfree" "21816,29088,36360,43632,50904,65448"
-write "$LMK/oom_reaper" "1"
-write "$LMK/batch_kill" "0"
-write "$LMK/quick_select" "0"
-write "$LMK/time_measure" "0"
-write "$LMK/trust_adj_chain" "N"
-write "$LMK/cost" "4096"
-write "$LMK/watermark_scale_factor" "30"
+write "${lmk}minfree" "21816,29088,36360,43632,50904,65448"
+write "${lmk}oom_reaper" "1"
+write "${lmk}batch_kill" "0"
+write "${lmk}quick_select" "0"
+write "${lmk}time_measure" "0"
+write "${lmk}trust_adj_chain" "N"
+write "${lmk}cost" "4096"
+write "${lmk}watermark_scale_factor" "30"
 
 # Disable Qualcomm per process reclaim for low-range and mid-range devices
 write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
@@ -1454,62 +1590,7 @@ fi
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-write "/sys/module/bluetooth/parameters/disable_ertm" "Y"
-write "/sys/module/bluetooth/parameters/disable_esco" "Y"
-write "/sys/module/dwc3/parameters/ep_addr_rxdbg_mask" "0"
-write "/sys/module/dwc3/parameters/ep_addr_txdbg_mask" "0"
-write "/sys/module/dwc3_msm/parameters/disable_host_mode" "0"
-write "/sys/module/hid_apple/parameters/fnmode" "0"
-write "/sys/module/hid/parameters/ignore_special_drivers" "0"
-write "/sys/module/hid_magicmouse/parameters/emulate_3button" "N"
-write "/sys/module/hid_magicmouse/parameters/emulate_scroll_wheel" "N"
-write "/sys/module/hid_magicmouse/parameters/scroll_speed" "0"
-write "/sys/module/mdss_fb/parameters/backlight_dimmer" "Y"
-write "/sys/module/otg_wakelock/parameters/enabled" "N"
-write "/sys/module/wakelock/parameters/debug_mask" "0"
-write "/sys/module/userwakelock/parameters/debug_mask" "0"
-write "/sys/module/binder/parameters/debug_mask" "0"
-write "/sys/module/debug/parameters/enable_event_log" "0"
-write "/sys/module/glink/parameters/debug_mask" "0"
-write "/sys/module/ip6_tunnel/parameters/log_ecn_error" "N"
-write "/sys/module/subsystem_restart/parameters/enable_ramdumps" "0"
-write "/sys/module/lowmemorykiller/parameters/debug_level" "0"
-write "/sys/module/msm_show_resume_irq/parameters/debug_mask" "0"
-write "/sys/module/msm_smd_pkt/parameters/debug_mask" "0"
-write "/sys/module/sit/parameters/log_ecn_error" "N"
-write "/sys/module/smp2p/parameters/debug_mask" "0"
-write "/sys/module/usb_bam/parameters/enable_event_log" "0"
-write "/sys/module/printk/parameters/console_suspend" "Y"
-write "/sys/module/printk/parameters/cpu" "N"
-write "/sys/module/printk/parameters/ignore_loglevel" "Y"
-write "/sys/module/printk/parameters/pid" "N"
-write "/sys/module/printk/parameters/time" "N"
-write "/sys/module/service_locator/parameters/enable" "0"
-write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
-for i in $($find /sys/ -name pm_qos_enable); do
-write "${i}" "1"
-done
-for i in $($find /sys/ -name debug_mask); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name debug_level); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ce); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name edac_mc_log_ue); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name enable_event_log); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name log_ecn_error); do
-write "${i}" "0"
-done
-for i in $($find /sys/ -name snapshot_crashdumper); do
-write "${i}" "0"
-done
+_disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -1517,15 +1598,18 @@ $resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
 $resetprop ro.config.ksm.support false
 
+# HWUI Tweaks
+x_hwui
+
 # EXT4 and F2FS Tweaks
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do
-#$mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
+#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($cat /proc/mounts | $grep ext4 | $cut -d ' ' -f2); do 
-#$mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($cat /proc/mounts | $grep f2fs | $cut -d ' ' -f2); do 
-#$mount -o remount,nobarrier ${f2fs}
+#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
+#$bb mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -1548,27 +1632,14 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-for v in 0 1 2 3 4; do
-    stop vendor.qti.hardware.perf@${v}.${v}-service 2>/dev/null
-    stop perf-hal-${v}-${v} 2>/dev/null
-done
-stop mpdecision 2>/dev/null
-stop vendor.perfservice 2>/dev/null
-stop traced 2>/dev/null
-stop vendor.cnss_diag 2>/dev/null
-stop vendor.tcpdump 2>/dev/null
-stop logd 2>/dev/null
-stop statsd 2>/dev/null
-stop traced 2>/dev/null
-stop oneplus_brain_service 2>/dev/null
-stop perfd 2>/dev/null
+_stop_services
 
 # I/O Tweaks
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($cat "${queue}scheduler")
-	for sched in cfq deadline anxiety noop kyber none
+    avail_scheds=$($bb cat "${queue}scheduler")
+	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
 			write "${queue}scheduler" "$sched"
@@ -1647,11 +1718,11 @@ write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 x_sqlite(){
 SQ_LOG="/storage/emulated/0/XTweak/sqlite.log"
 if [ -f "$SQ_LOG" ]; then
-	$rm -rf "$SQ_LOG"
+	$bb rm -rf "$SQ_LOG"
 fi
 echo " --- XTweak 2021 --- " >> $SQ_LOG
 echo "[*] Optimizing system databases..." >> $SQ_LOG
-for i in $($find /d* -iname "*.db"); do
+for i in $($bb find /d* -iname "*.db"); do
 $sqlite "$i" 'VACUUM;'
 resVac=$?
 if [ "$resVac" = "0" ]; then
@@ -1685,30 +1756,30 @@ x_zipalign(){
 ZA_LOG="/storage/emulated/0/XTweak/zipalign.log"
 ZA_DB="/storage/emulated/0/XTweak/zipalign.db"
 if [ -f "$ZA_LOG" ]; then
-	$rm -rf "$ZA_LOG"
+	$bb rm -rf "$ZA_LOG"
 
 elif [ ! -f "$ZA_DB" ]; then
-	$touch "$ZA_DB"
+	touch "$ZA_DB"
 fi
 echo " --- XTweak 2021 --- " >> $ZA_LOG
 for DIR in /system/app/* /data/app/* /system/product/app/* /system/priv-app/* /system/product/priv-app/* /vendor/data-app/* /vendor/app/* /vendor/overlay /system/system_ext/app/* /system/system_ext/priv-app/*
 do
    cd $DIR  
    for APK in *.apk; do
-    if [ "$APK" -ot "/storage/emulated/0/XTweak/zipalign.db" ] || [ "$($grep "$DIR/$APK" "/dev/XTweak/zipalign.db" | $wc -l)" -gt "0" ]; then
+    if [ "$APK" -ot "/storage/emulated/0/XTweak/zipalign.db" ] || [ "$($bb grep "$DIR/$APK" "/dev/XTweak/zipalign.db" | $bb wc -l)" -gt "0" ]; then
       echo -e "[*] Already checked: $DIR/$APK" >> $ZA_LOG
      else
       $zipalign -c 4 "$APK"
       if [ "$?" = "0" ]; then
         echo -e "[*] Already aligned: $DIR/$APK" >> $ZA_LOG
-        $grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK"  >> $ZA_DB
+        $bb grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK"  >> $ZA_DB
       else
         echo -e "[*] Now aligning: $DIR/$APK" >> $ZA_LOG
         cd $APK
         $zipalign -f 4 "$APK" "/cache/$APK"
-        $cp -af -p "/cache/$APK" "$APK"
-        $rm -f "/cache/$APK"
-        $grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK" >> $ZA_DB
+        $bb cp -af -p "/cache/$APK" "$APK"
+        $bb rm -f "/cache/$APK"
+        $bb grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK" >> $ZA_DB
       fi
     fi
   done
@@ -1720,44 +1791,44 @@ done
 ###############################
 
 x_clean(){
-$rm -rf /data/*.log
-$rm -rf /data/vendor/wlan_logs 
-$rm -rf /data/*.txt
-$rm -rf /cache/*.apk
-$rm -rf /data/anr/*
-$rm -rf /data/backup/pending/*.tmp
-$rm -rf /data/cache/*.* 
-$rm -rf /data/data/*.log 
-$rm -rf /data/data/*.txt 
-$rm -rf /data/log/*.log 
-$rm -rf /data/log/*.txt 
-$rm -rf /data/local/*.apk 
-$rm -rf /data/local/*.log 
-$rm -rf /data/local/*.txt 
-$rm -rf /data/mlog/* 
-$rm -rf /data/system/*.log 
-$rm -rf /data/system/*.txt 
-$rm -rf /data/system/dropbox/* 
-$rm -rf /data/system/usagestats/* 
-$rm -rf /data/system/shared_prefs/* 
-$rm -rf /data/tombstones/* 
-$rm -rf /sdcard/LOST.DIR 
-$rm -rf /sdcard/found000 
-$rm -rf /sdcard/LazyList 
-$rm -rf /sdcard/albumthumbs 
-$rm -rf /sdcard/kunlun 
-$rm -rf /sdcard/.CacheOfEUI 
-$rm -rf /sdcard/.bstats 
-$rm -rf /sdcard/.taobao 
-$rm -rf /sdcard/Backucup 
-$rm -rf /sdcard/MIUI/debug_log 
-$rm -rf /sdcard/ramdump 
-$rm -rf /sdcard/UnityAdsVideoCache 
-$rm -rf /sdcard/*.log 
-$rm -rf /sdcard/*.CHK 
-$rm -rf /sdcard/duilite 
-$rm -rf /sdcard/DkMiBrowserDemo 
-$rm -rf /sdcard/.xlDownload 
+$bb rm -rf /data/*.log
+$bb rm -rf /data/vendor/wlan_logs 
+$bb rm -rf /data/*.txt
+$bb rm -rf /cache/*.apk
+$bb rm -rf /data/anr/*
+$bb rm -rf /data/backup/pending/*.tmp
+$bb rm -rf /data/cache/*.* 
+$bb rm -rf /data/data/*.log 
+$bb rm -rf /data/data/*.txt 
+$bb rm -rf /data/log/*.log 
+$bb rm -rf /data/log/*.txt 
+$bb rm -rf /data/local/*.apk 
+$bb rm -rf /data/local/*.log 
+$bb rm -rf /data/local/*.txt 
+$bb rm -rf /data/mlog/* 
+$bb rm -rf /data/system/*.log 
+$bb rm -rf /data/system/*.txt 
+$bb rm -rf /data/system/dropbox/* 
+$bb rm -rf /data/system/usagestats/* 
+$bb rm -rf /data/system/shared_prefs/* 
+$bb rm -rf /data/tombstones/* 
+$bb rm -rf /sdcard/LOST.DIR 
+$bb rm -rf /sdcard/found000 
+$bb rm -rf /sdcard/LazyList 
+$bb rm -rf /sdcard/albumthumbs 
+$bb rm -rf /sdcard/kunlun 
+$bb rm -rf /sdcard/.CacheOfEUI 
+$bb rm -rf /sdcard/.bstats 
+$bb rm -rf /sdcard/.taobao 
+$bb rm -rf /sdcard/Backucup 
+$bb rm -rf /sdcard/MIUI/debug_log 
+$bb rm -rf /sdcard/ramdump 
+$bb rm -rf /sdcard/UnityAdsVideoCache 
+$bb rm -rf /sdcard/*.log 
+$bb rm -rf /sdcard/*.CHK 
+$bb rm -rf /sdcard/duilite 
+$bb rm -rf /sdcard/DkMiBrowserDemo 
+$bb rm -rf /sdcard/.xlDownload 
 }
 
 ##############################
@@ -1766,26 +1837,26 @@ $rm -rf /sdcard/.xlDownload
 
 x_doze(){
 # Stop certain services and restart it on boot
-if [ "$(busybox pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | $wc -l)" = "1" ]; then
-$kill $(busybox com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService)
+if [ "$($bb pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | $bb wc -l)" = "1" ]; then
+$bb kill $($bb com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService)
 
-elif [ "$(busybox pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver | $wc -l)" = "1" ]; then
-$kill $(busybox pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver)
+elif [ "$($bb pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver | $bb wc -l)" = "1" ]; then
+$bb kill $($bb pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver)
 
-elif [ "$(busybox pidof com.google.android.gms.unstable | $wc -l)" = "1" ]; then
-$kill $(busybox pidof com.google.android.gms.unstable)
+elif [ "$($bb pidof com.google.android.gms.unstable | $bb wc -l)" = "1" ]; then
+$bb kill $($bb $bb pidof com.google.android.gms.unstable)
 
-elif [ "$(busybox pidof com.google.android.gms.wearable | $wc -l)" = "1" ]; then
-$kill $(busybox pidof com.google.android.gms.wearable)
+elif [ "$($bb pidof com.google.android.gms.wearable | $bb wc -l)" = "1" ]; then
+$bb kill $($bb $bb pidof com.google.android.gms.wearable)
 
-elif [ "$(busybox pidof com.google.android.gms.backup.backupTransportService | $wc -l)" = "1" ]; then
-$kill $(busybox pidof com.google.android.gms.backup.backupTransportService)
+elif [ "$($bb pidof com.google.android.gms.backup.backupTransportService | $bb wc -l)" = "1" ]; then
+$bb kill $($bb pidof com.google.android.gms.backup.backupTransportService)
 
-elif [ "$(busybox pidof com.google.android.gms.lockbox.LockboxService | $wc -l)" = "1" ]; then
-$kill $(busybox pidof com.google.android.gms.lockbox.LockboxService)
+elif [ "$($bb pidof com.google.android.gms.lockbox.LockboxService | $bb wc -l)" = "1" ]; then
+$bb kill $($bb pidof com.google.android.gms.lockbox.LockboxService)
 
-elif [ "$(busybox pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService | $wc -l)" = "1" ]; then
-$kill $(busybox pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService)
+elif [ "$($bb pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService | $bb wc -l)" = "1" ]; then
+$bb kill $($bb pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService)
 fi
 for i in $(ls /data/user/)
 do
@@ -1803,15 +1874,15 @@ cmd appops set --user $i com.google.android.gms AUTO_START ignore
 cmd appops set --user $i com.google.android.ims AUTO_START ignore
 done
 # Optimize system settings (doze)
-dumpsys deviceidle enable all
-dumpsys deviceidle whitelist +com.android.systemui >/dev/null 2>&1
+$dumpsys deviceidle enable all
+$dumpsys deviceidle whitelist +com.android.systemui >/dev/null 2>&1
 settings put global dropbox_max_files 1
 settings put system anr_debugging_mechanism 0
 settings put global adaptive_battery_management_enabled 1
 settings put global aggressive_battery_saver 1
 settings put secure location_providers_allowed ' '
-dumpsys deviceidle enable all
-dumpsys deviceidle enabled all
+$dumpsys deviceidle enable all
+$dumpsys deviceidle enabled all
 settings put system display_color_enhance 1
 settings delete global device_idle_constants
 settings put global device_idle_constants inactive_to=60000,sensing_to=0,locating_to=0,location_accuracy=2000,motion_inactive_to=0,idle_after_inactive_to=0,idle_pending_to=60000,max_idle_pending_to=120000,idle_pending_factor=2.0,idle_to=900000,max_idle_to=21600000,idle_factor=2.0,max_temp_app_whitelist_duration=60000,mms_temp_app_whitelist_duration=30000,sms_temp_app_whitelist_duration=20000,light_after_inactive_to=10000,light_pre_idle_to=60000,light_idle_to=180000,light_idle_factor=2.0,light_max_idle_to=900000,light_idle_maintenance_min_budget=30000,light_idle_maintenance_max_budget=60000
@@ -1824,9 +1895,9 @@ settings put global device_idle_constants inactive_to=60000,sensing_to=0,locatin
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_task_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             echo "$temp_tid" > "/dev/$3/$2/tasks"
         done
     done
@@ -1835,8 +1906,8 @@ change_task_cgroup(){
 # $1:process_name $2:cgroup_name $3:"cpuset"/"stune"
 change_proc_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
-        comm="$($cat /proc/"$temp_pid"/comm)"
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+        comm="$($bb cat /proc/"$temp_pid"/comm)"
         echo "$temp_pid" > "/dev/$3/$2/cgroup.procs"
     done
 }
@@ -1844,10 +1915,10 @@ change_proc_cgroup(){
 # $1:task_name $2:thread_name $3:cgroup_name $4:"cpuset"/"stune"
 change_thread_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
                 echo "$temp_tid" > "/dev/$4/$3/tasks"
             fi
         done
@@ -1857,8 +1928,8 @@ change_thread_cgroup(){
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_main_thread_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
-        comm="$($cat /proc/"$temp_pid"/comm)"
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+        comm="$($bb cat /proc/"$temp_pid"/comm)"
         echo "$temp_pid" > "/dev/$3/$2/tasks"
     done
 }
@@ -1866,9 +1937,9 @@ change_main_thread_cgroup(){
 # $1:task_name $2:hex_mask(0x00000003 is CPU0 and CPU1)
 change_task_affinity(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             taskset -p "$2" "$temp_tid" >> "$LOG_FILE"
         done
     done
@@ -1877,10 +1948,10 @@ change_task_affinity(){
 # $1:task_name $2:thread_name $3:hex_mask(0x00000003 is CPU0 and CPU1)
 change_thread_affinity(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
                 taskset -p "$3" "$temp_tid" >> "$LOG_FILE"
             fi
         done
@@ -1889,7 +1960,7 @@ change_thread_affinity(){
 
 # $1:task_name $2:nice(relative to 120)
 change_task_nice(){
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
             renice -n +40 -p "$temp_tid"
             renice -n -19 -p "$temp_tid"
@@ -1901,10 +1972,10 @@ change_task_nice(){
 # $1:task_name $2:thread_name $3:nice(relative to 120)
 change_thread_nice(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
                 renice -n +40 -p "$temp_tid"
                 renice -n -19 -p "$temp_tid"
                 renice -n "$3" -p "$temp_tid"
@@ -1915,9 +1986,9 @@ change_thread_nice(){
 
 # $1:task_name $2:priority(99-x, 1<=x<=99)
 change_task_rt(){
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             chrt -f -p "$2" "$temp_tid" >> "$LOG_FILE"
         done
     done
@@ -1926,10 +1997,10 @@ change_task_rt(){
 # $1:task_name $2:thread_name $3:priority(99-x, 1<=x<=99)
 change_thread_rt(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $grep -i -E "$1" | $awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $grep -i -E "$2")" != "" ]; then
+            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
                 chrt -f -p "$3" "$temp_tid" >> "$LOG_FILE"
             fi
         done
@@ -2061,14 +2132,118 @@ change_thread_cgroup "\.composer" "^Binder" "top-app" "cpuset"
 unpin_proc "zygote|usap"
 change_task_high_prio "zygote|usap"
 
-# busybox fork from magiskd
+# $bb fork from magiskd
 pin_proc_on_mid "magiskd"
 change_task_nice "magiskd" "19"
 }
 
 ##############################
-# HWUI Optimization Function
-###############################
+# Misc. Optimization Functions
+##############################
+
+_disable_debuggers(){
+write "/sys/module/bluetooth/parameters/disable_ertm" "Y"
+write "/sys/module/bluetooth/parameters/disable_esco" "Y"
+write "/sys/module/dwc3/parameters/ep_addr_rxdbg_mask" "0"
+write "/sys/module/dwc3/parameters/ep_addr_txdbg_mask" "0"
+write "/sys/module/dwc3_msm/parameters/disable_host_mode" "0"
+write "/sys/module/hid_apple/parameters/fnmode" "0"
+write "/sys/module/hid/parameters/ignore_special_drivers" "0"
+write "/sys/module/hid_magicmouse/parameters/emulate_3button" "N"
+write "/sys/module/hid_magicmouse/parameters/emulate_scroll_wheel" "N"
+write "/sys/module/hid_magicmouse/parameters/scroll_speed" "0"
+write "/sys/module/mdss_fb/parameters/backlight_dimmer" "Y"
+write "/sys/module/otg_wakelock/parameters/enabled" "N"
+write "/sys/module/wakelock/parameters/debug_mask" "0"
+write "/sys/module/userwakelock/parameters/debug_mask" "0"
+write "/sys/module/binder/parameters/debug_mask" "0"
+write "/sys/module/debug/parameters/enable_event_log" "0"
+write "/sys/module/glink/parameters/debug_mask" "0"
+write "/sys/module/ip6_tunnel/parameters/log_ecn_error" "N"
+write "/sys/module/subsystem_restart/parameters/enable_ramdumps" "0"
+write "/sys/module/lowmemorykiller/parameters/debug_level" "0"
+write "/sys/module/msm_show_resume_irq/parameters/debug_mask" "0"
+write "/sys/module/msm_smd_pkt/parameters/debug_mask" "0"
+write "/sys/module/sit/parameters/log_ecn_error" "N"
+write "/sys/module/smp2p/parameters/debug_mask" "0"
+write "/sys/module/usb_bam/parameters/enable_event_log" "0"
+write "/sys/module/printk/parameters/console_suspend" "Y"
+write "/sys/module/printk/parameters/cpu" "N"
+write "/sys/module/printk/parameters/ignore_loglevel" "Y"
+write "/sys/module/printk/parameters/pid" "N"
+write "/sys/module/printk/parameters/time" "N"
+write "/sys/module/service_locator/parameters/enable" "0"
+write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
+for i in $($bb find /sys/ -name pm_qos_enable); do
+write "${i}" "1"
+done
+for i in $($bb find /sys/ -name debug_mask); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name debug_level); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name edac_mc_log_ce); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name edac_mc_log_ue); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name enable_event_log); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name log_ecn_error); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name snapshot_crashdumper); do
+write "${i}" "0"
+done
+}
+
+_lpm_levels(){
+if [ -d "${LPM}parameters" ]; then
+write "${LPM}parameters/lpm_prediction" "Y"
+write "${LPM}parameters/sleep_disabled" "0"
+
+elif [ -e "/sys/class/lcd/panel/power_reduce" ]; then
+write "/sys/class/lcd/panel/power_reduce" "1"
+
+elif [ -e "/sys/module/pm2/parameters/idle_sleep_mode" ]; then
+write "/sys/module/pm2/parameters/idle_sleep_mode" "Y"
+fi
+}
+
+_stop_services(){
+for v in 0 1 2 3 4; do
+    stop vendor.qti.hardware.perf@${v}.${v}-service 2>/dev/null
+    stop perf-hal-${v}-${v} 2>/dev/null
+done
+stop mpdecision 2>/dev/null
+stop vendor.perfservice 2>/dev/null
+stop traced 2>/dev/null
+stop vendor.cnss_diag 2>/dev/null
+stop vendor.tcpdump 2>/dev/null
+stop logd 2>/dev/null
+stop statsd 2>/dev/null
+stop traced 2>/dev/null
+stop oneplus_brain_service 2>/dev/null
+}
+
+_disable_sysctl(){
+[ -e "/system/etc/sysctl.conf" ] && $bb mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
+}
+
+_mmc_crc(){
+if [ -e "{mmc}removable" ]; then
+write "{mmc}removable" "N"
+
+elif [ -e "{mmc}crc" ]; then
+write "{mmc}crc" "N"
+
+elif [ -e "{mmc}use_spi_crc" ]; then
+write "{mmc}use_spi_crc" "Y"
+fi
+}
 
 x_hwui(){
 if [ "$TOTAL_RAM" -lt "3072" ]; then
@@ -2101,10 +2276,6 @@ $resetprop ro.hwui.text_large_cache_width 2048
 $resetprop ro.hwui.text_large_cache_height 1024
 fi
 }
-
-##############################
-# Net Optimization Function
-###############################
 
 x_net(){
 write "/proc/sys/net/ipv4/conf/default/secure_redirects" "0"

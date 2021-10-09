@@ -1,4 +1,7 @@
-# This file will be read by resetprop
+# XTweak™ | Props Tweaks
+
+# GPU Buffer count
+debug.egl.buffcount=4
 
 # Unify surfaceflinger props
 debug.sf.latch_unsignaled=1
@@ -44,6 +47,9 @@ windowsmgr.max_events_per_sec=500
 
 # Enable zygote pre-forking
 persist.device_config.runtime_native.usap_pool_enabled=true
+
+# Keep low ram flag
+ro.config.low_ram=true
 
 # Disable multitasking limits
 MIN_HIDDEN_APPS=false

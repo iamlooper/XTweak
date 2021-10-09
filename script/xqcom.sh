@@ -1,5 +1,5 @@
 #!/system/bin/sh
-# XTweak - Qualcomm™ SOCs Optimization Library
+# XTweak™ | Qualcomm™ SOCs Optimization Script
 # Author : LOOPER (iamlooper @ github)
 # Credits : Ferat Kesaev (feravolt @ github), The Linux Foundation
 
