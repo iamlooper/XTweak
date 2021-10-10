@@ -30,26 +30,34 @@ M=ACCUMULATOR
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
-_accumulator
+x_cgroup &>/dev/null
+accumulator
+x_net &>/dev/null
 
 elif [ "$MODE" = "3" ]; then
 M=EQUALIZER
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
-_equalizer
+x_cgroup &>/dev/null
+equalizer
+x_net &>/dev/null
 
 elif [ "$MODE" = "4" ]; then
 M=POTENCY
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
-_potency
+x_cgroup &>/dev/null
+potency
+x_net &>/dev/null
 
 elif [ "$MODE" = "5" ]; then
 M=OUTPUT
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
-_output
+x_cgroup &>/dev/null
+output
+x_net &>/dev/null
 fi

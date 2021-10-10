@@ -8,6 +8,14 @@
 # Basic Tool Functions
 ##############################
 
+su="/data/adb/modules/xtweak/bin/su"
+
+sqlite="/data/adb/modules/xtweak/bin/sqlite3"
+
+zipalign="/data/adb/modules/xtweak/bin/zipalign"
+
+bb="/data/adb/magisk/busybox"
+
 # $1:file-path $2:value
 write(){
 	# Bail out if file does not exist
@@ -57,6 +65,27 @@ mutate(){
     fi
 }
 
+# Maximum unsigned integer size in C
+uint_max="4294967295"
+
+# Duration in nanoseconds of one scheduling period
+sched_period_accumulator="$((5 * 1000 * 1000))"
+
+sched_period_equalizer="$((4 * 1000 * 1000))"
+
+sched_period_potency="$((1 * 1000 * 1000))"
+
+sched_period_output="$((10 * 1000 * 1000))"
+
+# How many tasks should we have at a maximum in one scheduling period
+sched_tasks_accumulator="5"
+
+sched_tasks_equalizer="8"
+
+sched_tasks_potency="10"
+
+sched_tasks_output="6"
+
 if [ -e "/system/bin/getprop" ]; then
 getprop="/system/bin/getprop"
 else
@@ -93,14 +122,6 @@ else
 pm="/system/xbin/pm"
 fi
 
-su="/data/adb/modules/xtweak/bin/su"
-
-sqlite="/data/adb/modules/xtweak/bin/sqlite3"
-
-zipalign="/data/adb/modules/xtweak/bin/zipalign"
-
-bb="/data/adb/magisk/busybox"
-
 ##############################
 # Kernel Variables
 ###############################
@@ -115,20 +136,22 @@ fs="/proc/sys/fs/"
 lmk="/sys/module/lowmemorykiller/parameters/"
 lpm="/sys/module/lpm_levels/"
 mmc="/sys/module/mmc_core/parameters/"
+blkio="/dev/blkio/"
+net="/proc/sys/net/"
 
 ##############################
 # Device Info Functions
 ###############################
 
 # Fetch ram info
-_ram_info(){
+ram_info(){
 TOTAL_RAM=$($bb free -m | $bb awk '/Mem:/{print $2}')
 FULL_RAM=$((TOTAL_RAM * 20 / 100))
 AVAIL_RAM=$($bb free -m | $bb awk '/Mem:/{print $7}')
 }
 
 # Fetch battery status
-_battery_status(){
+battery_status(){
 if [ -e "/sys/class/power_supply/battery/status" ]; then
 BATT_STATUS=$($bb cat /sys/class/power_supply/battery/status)
             
@@ -138,7 +161,7 @@ fi
 }
 
 # Fetch battery level
-_battery_percentage(){               
+battery_percentage(){               
 if [ -e "/sys/class/power_supply/battery/capacity" ]; then
 BATT_LVL=$($bb cat /sys/class/power_supply/battery/capacity)
                   
@@ -148,7 +171,7 @@ fi
 }
 
 # Fetch screen state
-_screen_state(){
+screen_state(){
 SCRN_STATE=$($dumpsys power | $bb grep state=O | $bb cut -d "=" -f 2)
 if [ "$scrn_state" = "ON" ]; then 
 SCRN_ON=1
@@ -291,7 +314,7 @@ echo "" >> $LOG
 # Main Optimizations Functions
 #############################
 
-_accumulator(){
+accumulator(){
 # Kernel Tweaks
 write "${kernel}sched_boost" "0"
 write "${kernel}perf_cpu_time_max_percent" "2"
@@ -300,9 +323,9 @@ write "${kernel}sched_cfs_boost" "0"
 write "${kernel}sched_child_runs_first" "0"
 write "${kernel}sched_cstat_aware" "1"
 write "${kernel}sched_tunable_scaling" "0"
-write "${kernel}sched_latency_ns" "5000000"
+write "${kernel}sched_latency_ns" "$sched_period_accumulator"
 write "${kernel}sched_migration_cost_ns" "500000"
-write "${kernel}sched_min_granularity_ns" "1000000"
+write "${kernel}sched_min_granularity_ns" "$((sched_period_accumulator / sched_tasks_accumulator))"
 write "${kernel}sched_nr_migrate" "256"
 write "${kernel}sched_rr_timeslice_ns" "100"
 write "${kernel}sched_rt_period_us" "1000000"
@@ -313,10 +336,12 @@ write "${kernel}sched_time_avg_ms" "1000"
 write "${kernel}sched_tunable_scaling" "0"
 write "${kernel}sched_use_walt_cpu_util" "1"
 write "${kernel}sched_use_walt_task_util" "1"
-write "${kernel}sched_wakeup_granularity_ns" "2500000"
+write "${kernel}sched_wakeup_granularity_ns" "$((sched_period_accumulator / 2))"
 write "${kernel}sched_walt_cpu_high_irqload" "20000000"
 write "${kernel}sched_walt_init_task_load_pct" "10"
+write "${kernel}sched_schedstats" "0"
 write "${kernel}hung_task_timeout_secs" "0"
+write "${kernel}printk_devkmsg" "off"
 
 # VM (Virtual Machine) Tweaks
 write "${vm}dirty_background_ratio" "3"
@@ -343,18 +368,18 @@ do
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
-        write "${cpu}schedutil/up_rate_limit_us" "5000"
-        write "${cpu}schedutil/down_rate_limit_us" "5000"
-        write "${cpu}schedutil/rate_limit_us" "5000"
+        write "${cpu}schedutil/up_rate_limit_us" "$((sched_period_accumulator / 1000))"
+        write "${cpu}schedutil/down_rate_limit_us" "$((sched_period_accumulator / 1000))"
+        write "${cpu}schedutil/rate_limit_us" "$((sched_period_accumulator / 1000))"
         write "${cpu}schedutil/hispeed_load" "99"
-        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$uint_max"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
-        write "${cpu}interactive/timer_rate" "5000"
-        write "${cpu}interactive/min_sample_time" "5000"
+        write "${cpu}interactive/timer_rate" "$((sched_period_accumulator / 1000))"
+        write "${cpu}interactive/min_sample_time" "$((sched_period_accumulator / 1000))"
         write "${cpu}interactive/go_hispeed_load" "99"
-        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$uint_max"
     fi
 done
 [ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "Y"
@@ -387,36 +412,33 @@ write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "25"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "10000"
 
 # Tune sched_domain values for better latency and perf
-for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
-do
-write "${sched_domain}min_interval" "4"
-write "${sched_domain}max_interval" "2"
-write "${sched_domain}busy_factor" "32"
-write "${sched_domain}busy_idx" "2"
-write "${sched_domain}cache_nice_tries" "1"
-write "${sched_domain}flags" "4143"
-write "${sched_domain}forkexec_idx" "0"
-write "${sched_domain}idle_idx" "1"
-write "${sched_domain}imbalance_pct" "125"
-write "${sched_domain}newidle_idx" "0"
-write "${sched_domain}wake_idx" "0"
-done
+#for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
+#do
+#write "${sched_domain}min_interval" "4"
+#write "${sched_domain}max_interval" "2"
+#write "${sched_domain}busy_factor" "32"
+#write "${sched_domain}busy_idx" "2"
+#write "${sched_domain}cache_nice_tries" "1"
+#write "${sched_domain}flags" "4143"
+#write "${sched_domain}forkexec_idx" "0"
+#write "${sched_domain}idle_idx" "1"
+#write "${sched_domain}imbalance_pct" "125"
+#write "${sched_domain}newidle_idx" "0"
+#write "${sched_domain}wake_idx" "0"
+#done
 
 # Tune sched_features for overall userspace improvement
 write "${sched_features}" "NO_NEXT_BUDDY"
 write "${sched_features}" "TTWU_QUEUE"
 write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
-write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+#write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
 write "${sched_features}" "ARCH_POWER"
 write "${sched_features}" "EAS_PREFER_IDLE"
 write "${sched_features}" "ENERGY_AWARE"
 write "${sched_features}" "NO_EAS_USE_NEED_IDLE"
 
 # Blkio Tweaks
-write "/dev/blkio/blkio.weight" "1000"
-write "/dev/blkio/blkio.leaf_weight" "1000"
-write "/dev/blkio/background/blkio.weight" "100"
-write "/dev/blkio/background/blkio.leaf_weight" "100"
+blkio_tweaks
 
 # Enable UFS powersaving
 for ufs in /sys/devices/soc/*/
@@ -429,33 +451,29 @@ write "/sys/class/typec/port0/port_type" "sink"
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "N"
 
 # LPM Levels Tweaks
-_lpm_levels
+lpm_levels
 
 # Multi-core powersaving
 [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ] && write "/sys/devices/system/cpu/sched_mc_power_savings" "2"
 
 # Tune raid speed limit
-write "${raid}speed_limit_max" "14000"
-write "${raid}speed_limit_min" "7000"
+#write "${raid}speed_limit_max" "14000"
+#write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "${pty}max" "4096"
-write "${pty}min" "2048"
+#write "${pty}max" "4096"
+#write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "${keys}gc_delay" "100"
-write "${keys}maxbytes" "20000"
-write "${keys}maxkeys" "200" 
+#write "${keys}gc_delay" "100"
+#write "${keys}maxbytes" "20000"
+#write "${keys}maxkeys" "200" 
 
 # FS (File-System) Tweaks
-write "${fs}leases-enable" "1"
-write "${fs}lease-break-time" "7"
-write "${fs}inotify/max_queued_events" "131072"
-write "${fs}inotify/max_user_watches" "131072"
-write "${fs}inotify/max_user_instances" "512"
+fs_tweaks
 
 # MMC CRC Tweaks
-_mmc_crc
+mmc_crc
 
 # App launch boost tweak
 write "/sys/module/boost_control/parameters/app_launch_boost_ms" "500"
@@ -487,13 +505,12 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-_disable_sysctl
+disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
 
 # LMK Tweaks
-_lmk_
 write "${lmk}minfree" "21816,29088,36360,43632,50904,65448"
 write "${lmk}oom_reaper" "1"
 write "${lmk}batch_kill" "0"
@@ -510,21 +527,13 @@ write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
 write "/sys/module/memplus_core/parameters/memory_plus_enabled" "0"
 
 # Disable rmnet and gpu logging levels
-write "/d/tracing/tracing_on" "0"
-write "/sys/module/rmnet_data/parameters/rmnet_data_log_level" "0"
-if [ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]; then
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_ctxt" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_drv" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/ltog_level_mem" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_pwr" "0"
-fi
+disable_rmnet_gpu_log_lvls
 
 # Disable exception-trace to reduce some overheads
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-_disable_debuggers
+disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -566,7 +575,7 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-_stop_services
+stop_services
 
 # Better to keep mpdecision alive if you are running out of battery
 start mpdecision 2>/dev/null
@@ -645,10 +654,10 @@ done
 # Entropy Tweaks
 write "/proc/sys/kernel/random/read_wakeup_threshold" "128"
 write "/proc/sys/kernel/random/write_wakeup_threshold" "128"
-write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
+#write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
-_equalizer(){
+equalizer(){
 # Kernel Tweaks
 write "${kernel}sched_boost" "0"
 write "${kernel}perf_cpu_time_max_percent" "5"
@@ -657,9 +666,9 @@ write "${kernel}sched_cfs_boost" "0"
 write "${kernel}sched_child_runs_first" "1"
 write "${kernel}sched_cstat_aware" "1"
 write "${kernel}sched_tunable_scaling" "0"
-write "${kernel}sched_latency_ns" "4000000"
+write "${kernel}sched_latency_ns" "$sched_period_equalizer"
 write "${kernel}sched_migration_cost_ns" "5000000"
-write "${kernel}sched_min_granularity_ns" "500000"
+write "${kernel}sched_min_granularity_ns" "$((sched_period_equalizer / sched_tasks_equalizer))"
 write "${kernel}sched_nr_migrate" "32"
 write "${kernel}sched_rr_timeslice_ns" "100"
 write "${kernel}sched_rt_period_us" "1000000"
@@ -670,10 +679,12 @@ write "${kernel}sched_time_avg_ms" "1000"
 write "${kernel}sched_tunable_scaling" "0"
 write "${kernel}sched_use_walt_cpu_util" "1"
 write "${kernel}sched_use_walt_task_util" "1"
-write "${kernel}sched_wakeup_granularity_ns" "2000000"
+write "${kernel}sched_wakeup_granularity_ns" "$((sched_period_equalizer / 2))"
 write "${kernel}sched_walt_cpu_high_irqload" "20000000"
 write "${kernel}sched_walt_init_task_load_pct" "20"
+write "${kernel}sched_schedstats" "0"
 write "${kernel}hung_task_timeout_secs" "0"
+write "${kernel}printk_devkmsg" "off"
 
 # VM (Virtual Machine) Tweaks
 write "${vm}dirty_background_ratio" "10"
@@ -700,18 +711,18 @@ do
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
-        write "${cpu}schedutil/up_rate_limit_us" "4000"
-        write "${cpu}schedutil/down_rate_limit_us" "16000"
-        write "${cpu}schedutil/rate_limit_us" "4000"
+        write "${cpu}schedutil/up_rate_limit_us" "$((sched_period_equalizer / 1000))"
+        write "${cpu}schedutil/down_rate_limit_us" "$((4 * sched_period_equalizer / 1000))"
+        write "${cpu}schedutil/rate_limit_us" "$((sched_period_equalizer / 1000))"
         write "${cpu}schedutil/hispeed_load" "90"
-        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$uint_max"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
-        write "${cpu}interactive/timer_rate" "4000"
-        write "${cpu}interactive/min_sample_time" "4000"
+        write "${cpu}interactive/timer_rate" "$((sched_period_equalizer / 1000))"
+        write "${cpu}interactive/min_sample_time" "$((sched_period_equalizer / 1000))"
         write "${cpu}interactive/go_hispeed_load" "90"	
-        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$uint_max"
     fi
 done
 [ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "Y"
@@ -744,26 +755,26 @@ write "/sys/module/adreno_idler/parameters/adreno_idler_downdifferential" "25"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "15"
 
 # Tune sched_domain values for better latency and perf
-for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
-do
-write "${sched_domain}min_interval" "8"
-write "${sched_domain}max_interval" "4"
-write "${sched_domain}busy_factor" "32"
-write "${sched_domain}busy_idx" "2"
-write "${sched_domain}cache_nice_tries" "1"
-write "${sched_domain}flags" "4143"
-write "${sched_domain}forkexec_idx" "0"
-write "${sched_domain}idle_idx" "1"
-write "${sched_domain}imbalance_pct" "125"
-write "${sched_domain}newidle_idx" "0"
-write "${sched_domain}wake_idx" "0"
-done
+#for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
+#do
+#write "${sched_domain}min_interval" "8"
+#write "${sched_domain}max_interval" "4"
+#write "${sched_domain}busy_factor" "32"
+#write "${sched_domain}busy_idx" "2"
+#write "${sched_domain}cache_nice_tries" "1"
+#write "${sched_domain}flags" "4143"
+#write "${sched_domain}forkexec_idx" "0"
+#write "${sched_domain}idle_idx" "1"
+#write "${sched_domain}imbalance_pct" "125"
+#write "${sched_domain}newidle_idx" "0"
+#write "${sched_domain}wake_idx" "0"
+#done
 
 # Tune sched_features for overall userspace improvement
 write "${sched_features}" "NO_NEXT_BUDDY"
 write "${sched_features}" "TTWU_QUEUE"
 write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
-write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+#write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
 write "${sched_features}" "ARCH_POWER"
 write "${sched_features}" "EAS_PREFER_IDLE"
 write "${sched_features}" "ENERGY_AWARE"
@@ -780,41 +791,32 @@ write "/sys/class/typec/port0/port_type" "sink"
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "N"
 
 # LPM Levels Tweaks
-_lpm_levels
+lpm_levels
 
 # Multi-core powersaving
-if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
-write "/sys/devices/system/cpu/sched_mc_power_savings" "1"
-fi
+[ -e "/sys/devices/system/cpu/sched_mc_power_savings" ] && write "/sys/devices/system/cpu/sched_mc_power_savings" "1"
 
 # Tune raid speed limit
-write "${raid}speed_limit_max" "14000"
-write "${raid}speed_limit_min" "7000"
+#write "${raid}speed_limit_max" "14000"
+#write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "${pty}max" "4096"
-write "${pty}min" "2048"
+#write "${pty}max" "4096"
+#write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "${keys}gc_delay" "100"
-write "${keys}maxbytes" "20000"
-write "${keys}maxkeys" "200"
+#write "${keys}gc_delay" "100"
+#write "${keys}maxbytes" "20000"
+#write "${keys}maxkeys" "200"
 
 # FS (File-System) Tweaks
-write "${fs}leases-enable" "1"
-write "${fs}lease-break-time" "7"
-write "${fs}inotify/max_queued_events" "131072"
-write "${fs}inotify/max_user_watches" "131072"
-write "${fs}inotify/max_user_instances" "512"
+fs_tweaks
 
 # MMC CRC Tweaks
-_mmc_crc
+mmc_crc
 
 # Blkio Tweaks
-write "/dev/blkio/blkio.weight" "1000"
-write "/dev/blkio/blkio.leaf_weight" "1000"
-write "/dev/blkio/background/blkio.weight" "100"
-write "/dev/blkio/background/blkio.leaf_weight" "100"
+blkio_tweaks
 
 # App launch boost tweak
 write "/sys/module/boost_control/parameters/app_launch_boost_ms" "500"
@@ -846,7 +848,7 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-_disable_sysctl
+disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
@@ -868,21 +870,13 @@ write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
 write "/sys/module/memplus_core/parameters/memory_plus_enabled" "0"
 
 # Disable rmnet and gpu logging levels
-write "/d/tracing/tracing_on" "0"
-write "/sys/module/rmnet_data/parameters/rmnet_data_log_level" "0"
-if [ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]; then
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_ctxt" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_drv" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/ltog_level_mem" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_pwr" "0"
-fi
+disable_rmnet_gpu_log_lvls
 
 # Disable exception-trace to reduce some overheads
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-_disable_debuggers
+disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -924,7 +918,7 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-_stop_services
+stop_services
 
 # I/O
 for queue in /sys/block/*/queue/
@@ -1000,10 +994,10 @@ done
 # Entropy Tweaks
 write "/proc/sys/kernel/random/read_wakeup_threshold" "128"
 write "/proc/sys/kernel/random/write_wakeup_threshold" "256"
-write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
+#write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
-_potency(){
+potency(){
 # Kernel Tweaks
 write "${kernel}sched_boost" "0"
 write "${kernel}perf_cpu_time_max_percent" "3"
@@ -1012,9 +1006,9 @@ write "${kernel}sched_cfs_boost" "0"
 write "${kernel}sched_child_runs_first" "1"
 write "${kernel}sched_cstat_aware" "1"
 write "${kernel}sched_tunable_scaling" "0"
-write "${kernel}sched_latency_ns" "1000000"
+write "${kernel}sched_latency_ns" "$sched_period_potency"
 write "${kernel}sched_migration_cost_ns" "5000000"
-write "${kernel}sched_min_granularity_ns" "100000"
+write "${kernel}sched_min_granularity_ns" "$((sched_period_potency / sched_tasks_potency))"
 write "${kernel}sched_nr_migrate" "16"
 write "${kernel}sched_rr_timeslice_ns" "100"
 write "${kernel}sched_rt_period_us" "1000000"
@@ -1025,10 +1019,12 @@ write "${kernel}sched_time_avg_ms" "1000"
 write "${kernel}sched_tunable_scaling" "0"
 write "${kernel}sched_use_walt_cpu_util" "1"
 write "${kernel}sched_use_walt_task_util" "1"
-write "${kernel}sched_wakeup_granularity_ns" "500000"
+write "${kernel}sched_wakeup_granularity_ns" "$((sched_period_potency / 2))"
 write "${kernel}sched_walt_cpu_high_irqload" "20000000"
 write "${kernel}sched_walt_init_task_load_pct" "20"
+write "${kernel}sched_schedstats" "0"
 write "${kernel}hung_task_timeout_secs" "0"
+write "${kernel}printk_devkmsg" "off"
 
 # VM (Virtual Machine) Tweaks
 write "${vm}dirty_background_ratio" "6"
@@ -1059,14 +1055,14 @@ do
         write "${cpu}schedutil/down_rate_limit_us" "0"
         write "${cpu}schedutil/rate_limit_us" "0"
         write "${cpu}schedutil/hispeed_load" "85"
-        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$uint_max"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
         write "${cpu}interactive/timer_rate" "0"
         write "${cpu}interactive/min_sample_time" "0"
         write "${cpu}interactive/go_hispeed_load" "85"
-        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$uint_max"
     fi
 done
 [ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "N"
@@ -1099,26 +1095,26 @@ write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "15"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "4000"
 
 # Tune sched_domain values for better latency and perf
-for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
-do
-write "${sched_domain}min_interval" "8"
-write "${sched_domain}max_interval" "4"
-write "${sched_domain}busy_factor" "32"
-write "${sched_domain}busy_idx" "2"
-write "${sched_domain}cache_nice_tries" "1"
-write "${sched_domain}flags" "4143"
-write "${sched_domain}forkexec_idx" "0"
-write "${sched_domain}idle_idx" "1"
-write "${sched_domain}imbalance_pct" "125"
-write "${sched_domain}newidle_idx" "0"
-write "${sched_domain}wake_idx" "0"
-done
+#for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
+#do
+#write "${sched_domain}min_interval" "8"
+#write "${sched_domain}max_interval" "4"
+#write "${sched_domain}busy_factor" "32"
+#write "${sched_domain}busy_idx" "2"
+#write "${sched_domain}cache_nice_tries" "1"
+#write "${sched_domain}flags" "4143"
+#write "${sched_domain}forkexec_idx" "0"
+#write "${sched_domain}idle_idx" "1"
+#write "${sched_domain}imbalance_pct" "125"
+#write "${sched_domain}newidle_idx" "0"
+#write "${sched_domain}wake_idx" "0"
+#done
 
 # Tune sched_features for overall userspace improvement 
 write "${sched_features}" "NO_NEXT_BUDDY"
 write "${sched_features}" "TTWU_QUEUE"
 write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
-write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+#write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
 write "${sched_features}" "ARCH_POWER"
 write "${sched_features}" "EAS_PREFER_IDLE"
 write "${sched_features}" "ENERGY_AWARE"
@@ -1134,41 +1130,32 @@ done
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "Y"
 
 # LPM Levels Tweaks
-_lpm_levels
+lpm_levels
 
 # Multi-core powersaving
-if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
-write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
-fi
+[ -e "/sys/devices/system/cpu/sched_mc_power_savings" ] && write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
 
 # Tune raid speed limit
-write "${raid}speed_limit_max" "14000"
-write "${raid}speed_limit_min" "7000"
+#write "${raid}speed_limit_max" "14000"
+#write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "${pty}max" "4096"
-write "${pty}min" "2048"
+#write "${pty}max" "4096"
+#write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "${keys}gc_delay" "100"
-write "${keys}maxbytes" "20000"
-write "${keys}maxkeys" "200" 
+#write "${keys}gc_delay" "100"
+#write "${keys}maxbytes" "20000"
+#write "${keys}maxkeys" "200" 
 
 # FS (File-System) Tweaks
-write "${fs}leases-enable" "1"
-write "${fs}lease-break-time" "7"
-write "${fs}inotify/max_queued_events" "131072"
-write "${fs}inotify/max_user_watches" "131072"
-write "${fs}inotify/max_user_instances" "512"
+fs_tweaks
 
 # MMC CRC Tweaks
-_mmc_crc
+mmc_crc
 
 # Blkio Tweaks
-write "/dev/blkio/blkio.weight" "1000"
-write "/dev/blkio/blkio.leaf_weight" "1000"
-write "/dev/blkio/background/blkio.weight" "100"
-write "/dev/blkio/background/blkio.leaf_weight" "100"
+blkio_tweaks
 
 # App launch boost tweak
 write "/sys/module/boost_control/parameters/app_launch_boost_ms" "500"
@@ -1200,7 +1187,7 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-_disable_sysctl
+disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
@@ -1222,21 +1209,13 @@ write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
 write "/sys/module/memplus_core/parameters/memory_plus_enabled" "0"
 
 # Disable rmnet and gpu logging levels
-write "/d/tracing/tracing_on" "0"
-write "/sys/module/rmnet_data/parameters/rmnet_data_log_level" "0"
-if [ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]; then
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_ctxt" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_drv" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/ltog_level_mem" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_pwr" "0"
-fi
+disable_rmnet_gpu_log_lvls
 
 # Disable exception-trace to reduce some overheads
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-_disable_debuggers
+disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -1278,7 +1257,7 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-_stop_services
+stop_services
 
 # I/O
 for queue in /sys/block/*/queue/
@@ -1354,10 +1333,10 @@ done
 # Entropy Tweaks
 write "/proc/sys/kernel/random/read_wakeup_threshold" "256"
 write "/proc/sys/kernel/random/write_wakeup_threshold" "256"
-write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
+#write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
-_output(){
+output(){
 # Kernel Tweaks
 write "${kernel}sched_boost" "0"
 write "${kernel}perf_cpu_time_max_percent" "20"
@@ -1366,9 +1345,9 @@ write "${kernel}sched_cfs_boost" "1"
 write "${kernel}sched_child_runs_first" "0"
 write "${kernel}sched_cstat_aware" "1"
 write "${kernel}sched_tunable_scaling" "0"
-write "${kernel}sched_latency_ns" "10000000"
+write "${kernel}sched_latency_ns" "$sched_period_output"
 write "${kernel}sched_migration_cost_ns" "5000000"
-write "${kernel}sched_min_granularity_ns" "1666666"
+write "${kernel}sched_min_granularity_ns" "$((sched_period_output / sched_tasks_output))"
 write "${kernel}sched_nr_migrate" "128"
 write "${kernel}sched_rr_timeslice_ns" "100"
 write "${kernel}sched_rt_period_us" "1000000"
@@ -1379,10 +1358,12 @@ write "${kernel}sched_time_avg_ms" "1000"
 write "${kernel}sched_tunable_scaling" "0"
 write "${kernel}sched_use_walt_cpu_util" "1"
 write "${kernel}sched_use_walt_task_util" "1"
-write "${kernel}sched_wakeup_granularity_ns" "5000000"
+write "${kernel}sched_wakeup_granularity_ns" "$((sched_period_output / 2))"
 write "${kernel}sched_walt_cpu_high_irqload" "20000000"
 write "${kernel}sched_walt_init_task_load_pct" "20"
+write "${kernel}sched_schedstats" "0"
 write "${kernel}hung_task_timeout_secs" "0"
+write "${kernel}printk_devkmsg" "off"
 
 # VM (Virtual Machine) Tweaks
 write "${vm}dirty_background_ratio" "15"
@@ -1409,18 +1390,18 @@ do
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
-        write "${cpu}schedutil/up_rate_limit_us" "10000"
-        write "${cpu}schedutil/down_rate_limit_us" "40000"
-        write "${cpu}schedutil/rate_limit_us" "10000"
+        write "${cpu}schedutil/up_rate_limit_us" "$((sched_period_output / 1000))"
+        write "${cpu}schedutil/down_rate_limit_us" "$((4 * sched_period_output / 1000))"
+        write "${cpu}schedutil/rate_limit_us" "$((sched_period_output / 1000))"
         write "${cpu}schedutil/hispeed_load" "85"
-        write "${cpu}schedutil/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}schedutil/hispeed_freq" "$uint_max"
     elif [ "$avail_govs" = *"interactive"* ]
     then
         write "${cpu}scaling_governor" "interactive"
-        write "${cpu}interactive/timer_rate" "10000"
-        write "${cpu}interactive/min_sample_time" "10000"
+        write "${cpu}interactive/timer_rate" "$((sched_period_output / 1000))"
+        write "${cpu}interactive/min_sample_time" "$((sched_period_output / 1000))"
         write "${cpu}interactive/go_hispeed_load" "85"
-        write "${cpu}interactive/hispeed_freq" "$($bb cat "${cpu}cpuinfo_max_freq")"
+        write "${cpu}interactive/hispeed_freq" "$uint_max"
     fi
 done
 [ -e "/sys/module/workqueue/parameters/power_efficient" ] && lock "/sys/module/workqueue/parameters/power_efficient" "N"
@@ -1453,26 +1434,26 @@ write "/sys/module/adreno_idler/parameters/adreno_idler_idlewait" "15"
 write "/sys/module/adreno_idler/parameters/adreno_idler_idleworkload" "4500"
 
 # Tune sched_domain values for better latency and perf
-for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
-do
-write "${sched_domain}min_interval" "8"
-write "${sched_domain}max_interval" "4"
-write "${sched_domain}busy_factor" "32"
-write "${sched_domain}busy_idx" "2"
-write "${sched_domain}cache_nice_tries" "1"
-write "${sched_domain}flags" "4143"
-write "${sched_domain}forkexec_idx" "0"
-write "${sched_domain}idle_idx" "1"
-write "${sched_domain}imbalance_pct" "125"
-write "${sched_domain}newidle_idx" "0"
-write "${sched_domain}wake_idx" "0"
-done
+#for sched_domain in /proc/sys/kernel/sched_domain/cpu*/domain*/
+#do
+#write "${sched_domain}min_interval" "8"
+#write "${sched_domain}max_interval" "4"
+#write "${sched_domain}busy_factor" "32"
+#write "${sched_domain}busy_idx" "2"
+#write "${sched_domain}cache_nice_tries" "1"
+#write "${sched_domain}flags" "4143"
+#write "${sched_domain}forkexec_idx" "0"
+#write "${sched_domain}idle_idx" "1"
+#write "${sched_domain}imbalance_pct" "125"
+#write "${sched_domain}newidle_idx" "0"
+#write "${sched_domain}wake_idx" "0"
+#done
 
 # Tune sched_features for overall userspace improvement 
 write "${sched_features}" "NO_NEXT_BUDDY"
 write "${sched_features}" "TTWU_QUEUE"
 write "${sched_features}" "NO_GENTLE_FAIR_SLEEPERS"
-write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
+#write "${sched_features}" "NO_NEW_FAIR_SLEEPERS"
 write "${sched_features}" "ARCH_POWER"
 write "${sched_features}" "EAS_PREFER_IDLE"
 write "${sched_features}" "ENERGY_AWARE"
@@ -1488,41 +1469,32 @@ done
 write "/sys/module/lpm_levels/parameters/sleep_disabled" "Y"
 
 # LPM Levels Tweaks
-_lpm_levels
+lpm_levels
 
 # Multi-core powersaving
-if [ -e "/sys/devices/system/cpu/sched_mc_power_savings" ]; then
-write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
-fi
+[ -e "/sys/devices/system/cpu/sched_mc_power_savings" ] && write "/sys/devices/system/cpu/sched_mc_power_savings" "0"
 
 # Tune raid speed limit
-write "${raid}speed_limit_max" "14000"
-write "${raid}speed_limit_min" "7000"
+#write "${raid}speed_limit_max" "14000"
+#write "${raid}speed_limit_min" "7000"
 
 # Tune pty tunables 
-write "${pty}max" "4096"
-write "${pty}min" "2048"
+#write "${pty}max" "4096"
+#write "${pty}min" "2048"
 
 # Tune /proc/sys/kernel/keys/ tunables
-write "${keys}gc_delay" "100"
-write "${keys}maxbytes" "20000"
-write "${keys}maxkeys" "200"
+#write "${keys}gc_delay" "100"
+#write "${keys}maxbytes" "20000"
+#write "${keys}maxkeys" "200"
 
 # FS (File-System) Tweaks
-write "${fs}leases-enable" "1"
-write "${fs}lease-break-time" "7"
-write "${fs}inotify/max_queued_events" "131072"
-write "${fs}inotify/max_user_watches" "131072"
-write "${fs}inotify/max_user_instances" "512"
+fs_tweaks
 
 # MMC CRC Tweaks
-_mmc_crc
+mmc_crc
 
 # Blkio Tweaks
-write "/dev/blkio/blkio.weight" "1000"
-write "/dev/blkio/blkio.leaf_weight" "1000"
-write "/dev/blkio/background/blkio.weight" "100"
-write "/dev/blkio/background/blkio.leaf_weight" "100"
+blkio_tweaks
 
 # App launch boost tweak
 write "/sys/module/boost_control/parameters/app_launch_boost_ms" "500"
@@ -1554,7 +1526,7 @@ write "/dev/cpuset/system-background/uclamp.boosted" "0"
 write "/dev/cpuset/system-background/uclamp.latency_sensitive" "0"
 
 # Disable sysctl.conf to prevent system interference
-_disable_sysctl
+disable_sysctl
 
 # Tune pm_freeze_timeout for kernel
 write "/sys/power/pm_freeze_timeout" "60000"
@@ -1576,21 +1548,13 @@ write "/sys/module/process_reclaim/parameters/enable_process_reclaim" "0"
 write "/sys/module/memplus_core/parameters/memory_plus_enabled" "0"
 
 # Disable rmnet and gpu logging levels
-write "/d/tracing/tracing_on" "0"
-write "/sys/module/rmnet_data/parameters/rmnet_data_log_level" "0"
-if [ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]; then
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_ctxt" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_drv" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/ltog_level_mem" "0"
-write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_pwr" "0"
-fi
+disable_rmnet_gpu_log_lvls
 
 # Disable exception-trace to reduce some overheads
 write "/proc/sys/debug/exception-trace" "0"
 
 # Turn off a few additional kernel debuggers
-_disable_debuggers
+disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
@@ -1632,7 +1596,7 @@ write "${f2fs}/cp_interval" "250"
 done
 
 # Stopping various sevices
-_stop_services
+stop_services
 
 # I/O Tweaks
 for queue in /sys/block/*/queue/
@@ -1708,7 +1672,7 @@ done
 # Entropy Tweaks
 write "/proc/sys/kernel/random/read_wakeup_threshold" "256"
 write "/proc/sys/kernel/random/write_wakeup_threshold" "384"
-write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
+#write "/proc/sys/kernel/random/urandom_min_reseed_secs" "120"
 }
 
 ##############################
@@ -2141,39 +2105,10 @@ change_task_nice "magiskd" "19"
 # Misc. Optimization Functions
 ##############################
 
-_disable_debuggers(){
-write "/sys/module/bluetooth/parameters/disable_ertm" "Y"
-write "/sys/module/bluetooth/parameters/disable_esco" "Y"
-write "/sys/module/dwc3/parameters/ep_addr_rxdbg_mask" "0"
-write "/sys/module/dwc3/parameters/ep_addr_txdbg_mask" "0"
-write "/sys/module/dwc3_msm/parameters/disable_host_mode" "0"
-write "/sys/module/hid_apple/parameters/fnmode" "0"
-write "/sys/module/hid/parameters/ignore_special_drivers" "0"
-write "/sys/module/hid_magicmouse/parameters/emulate_3button" "N"
-write "/sys/module/hid_magicmouse/parameters/emulate_scroll_wheel" "N"
-write "/sys/module/hid_magicmouse/parameters/scroll_speed" "0"
-write "/sys/module/mdss_fb/parameters/backlight_dimmer" "Y"
-write "/sys/module/otg_wakelock/parameters/enabled" "N"
-write "/sys/module/wakelock/parameters/debug_mask" "0"
-write "/sys/module/userwakelock/parameters/debug_mask" "0"
-write "/sys/module/binder/parameters/debug_mask" "0"
-write "/sys/module/debug/parameters/enable_event_log" "0"
-write "/sys/module/glink/parameters/debug_mask" "0"
-write "/sys/module/ip6_tunnel/parameters/log_ecn_error" "N"
-write "/sys/module/subsystem_restart/parameters/enable_ramdumps" "0"
-write "/sys/module/lowmemorykiller/parameters/debug_level" "0"
-write "/sys/module/msm_show_resume_irq/parameters/debug_mask" "0"
-write "/sys/module/msm_smd_pkt/parameters/debug_mask" "0"
-write "/sys/module/sit/parameters/log_ecn_error" "N"
-write "/sys/module/smp2p/parameters/debug_mask" "0"
-write "/sys/module/usb_bam/parameters/enable_event_log" "0"
-write "/sys/module/printk/parameters/console_suspend" "Y"
-write "/sys/module/printk/parameters/cpu" "N"
-write "/sys/module/printk/parameters/ignore_loglevel" "Y"
-write "/sys/module/printk/parameters/pid" "N"
-write "/sys/module/printk/parameters/time" "N"
-write "/sys/module/service_locator/parameters/enable" "0"
-write "/sys/module/subsystem_restart/parameters/disable_restart_work" "1"
+disable_debuggers(){
+for i in $($bb find /sys/ -name log_level*); do
+write "${i}" "1"
+done
 for i in $($bb find /sys/ -name pm_qos_enable); do
 write "${i}" "1"
 done
@@ -2183,10 +2118,13 @@ done
 for i in $($bb find /sys/ -name debug_level); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name edac_mc_log_ce); do
+for i in $($bb find /sys/ -name *log_ue*); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name edac_mc_log_ue); do
+for i in $($bb find /sys/ -name *log_ce*); do
+write "${i}" "0"
+done
+for i in $($bb find /sys/ -name edac_mc_log*); do
 write "${i}" "0"
 done
 for i in $($bb find /sys/ -name enable_event_log); do
@@ -2195,15 +2133,18 @@ done
 for i in $($bb find /sys/ -name log_ecn_error); do
 write "${i}" "0"
 done
+for i in $($bb find /sys/ -name sec_log*); do
+write "${i}" "0"
+done
 for i in $($bb find /sys/ -name snapshot_crashdumper); do
 write "${i}" "0"
 done
 }
 
-_lpm_levels(){
-if [ -d "${LPM}parameters" ]; then
-write "${LPM}parameters/lpm_prediction" "Y"
-write "${LPM}parameters/sleep_disabled" "0"
+lpm_levels(){
+if [ -d "${lpm}parameters" ]; then
+write "${lpm}parameters/lpm_prediction" "Y"
+write "${lpm}parameters/sleep_disabled" "0"
 
 elif [ -e "/sys/class/lcd/panel/power_reduce" ]; then
 write "/sys/class/lcd/panel/power_reduce" "1"
@@ -2213,13 +2154,11 @@ write "/sys/module/pm2/parameters/idle_sleep_mode" "Y"
 fi
 }
 
-_stop_services(){
+stop_services(){
 for v in 0 1 2 3 4; do
-    stop vendor.qti.hardware.perf@${v}.${v}-service 2>/dev/null
     stop perf-hal-${v}-${v} 2>/dev/null
 done
 stop mpdecision 2>/dev/null
-stop vendor.perfservice 2>/dev/null
 stop traced 2>/dev/null
 stop vendor.cnss_diag 2>/dev/null
 stop vendor.tcpdump 2>/dev/null
@@ -2229,11 +2168,11 @@ stop traced 2>/dev/null
 stop oneplus_brain_service 2>/dev/null
 }
 
-_disable_sysctl(){
+disable_sysctl(){
 [ -e "/system/etc/sysctl.conf" ] && $bb mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
 }
 
-_mmc_crc(){
+mmc_crc(){
 if [ -e "{mmc}removable" ]; then
 write "{mmc}removable" "N"
 
@@ -2241,8 +2180,37 @@ elif [ -e "{mmc}crc" ]; then
 write "{mmc}crc" "N"
 
 elif [ -e "{mmc}use_spi_crc" ]; then
-write "{mmc}use_spi_crc" "Y"
+write "{mmc}use_spi_crc" "N"
 fi
+}
+
+disable_rmnet_gpu_log_lvls(){
+write "/d/tracing/tracing_on" "0"
+write "/sys/module/rmnet_data/parameters/rmnet_data_log_level" "0"
+if [ -e "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" ]; then
+write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_cmd" "0"
+write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_ctxt" "0"
+write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_drv" "0"
+write "/sys/kernel/debug/kgsl/kgsl-3d0/ltog_level_mem" "0"
+write "/sys/kernel/debug/kgsl/kgsl-3d0/log_level_pwr" "0"
+fi
+}
+
+blkio_tweaks(){
+write "${blkio}blkio.weight" "1000"
+write "${blkio}background/blkio.weight" "200"
+write "${blkio}blkio.group_idle" "2000"
+write "${blkio}background/blkio.group_idle" "0"
+}
+
+fs_tweaks(){
+write "${fs}dir-notify-enable" "0"
+write "${fs}lease-break-time" "7"
+write "${fs}leases-enable" "1"
+write "${fs}file-max" "2097152"
+write "${fs}inotify/max_queued_events" "131072"
+write "${fs}inotify/max_user_watches" "131072"
+write "${fs}inotify/max_user_instances" "1024"
 }
 
 x_hwui(){
@@ -2278,45 +2246,45 @@ fi
 }
 
 x_net(){
-write "/proc/sys/net/ipv4/conf/default/secure_redirects" "0"
-write "/proc/sys/net/ipv4/conf/default/accept_redirects" "0"
-write "/proc/sys/net/ipv4/conf/default/accept_source_route" "0"
-write "/proc/sys/net/ipv4/conf/all/secure_redirects" "0"
-write "/proc/sys/net/ipv4/conf/all/accept_redirects" "0"
-write "/proc/sys/net/ipv4/conf/all/accept_source_route" "0"
-write "/proc/sys/net/ipv4/ip_forward" "0"
-write "/proc/sys/net/ipv4/ip_dynaddr" "0"
-write "/proc/sys/net/ipv4/ip_no_pmtu_disc" "0"
-write "/proc/sys/net/ipv4/tcp_ecn" "0"
-write "/proc/sys/net/ipv4/tcp_timestamps" "0"
-write "/proc/sys/net/ipv4/tcp_tw_reuse" "1"
-write "/proc/sys/net/ipv4/tcp_fack" "1"
-write "/proc/sys/net/ipv4/tcp_sack" "1"
-write "/proc/sys/net/ipv4/tcp_dsack" "1"
-write "/proc/sys/net/ipv4/tcp_rfc1337" "1"
-write "/proc/sys/net/ipv4/tcp_tw_recycle" "1"
-write "/proc/sys/net/ipv4/tcp_window_scaling" "1"
-write "/proc/sys/net/ipv4/tcp_moderate_rcvbuf" "1"
-write "/proc/sys/net/ipv4/tcp_no_metrics_save" "1"
-write "/proc/sys/net/ipv4/tcp_synack_retries" "2"
-write "/proc/sys/net/ipv4/tcp_syn_retries" "2"
-write "/proc/sys/net/ipv4/tcp_keepalive_probes" "5"
-write "/proc/sys/net/ipv4/tcp_fin_timeout" "30"
-write "/proc/sys/net/core/rmem_max" "261120"
-write "/proc/sys/net/core/wmem_max" "261120"
-write "/proc/sys/net/core/rmem_default" "261120"
-write "/proc/sys/net/core/wmem_default" "261120"
-write "/proc/sys/net/core/netdev_max_backlog" "128"
-write "/proc/sys/net/core/netdev_tstamp_prequeue" "0"
-write "/proc/sys/net/ipv4/cipso_cache_bucket_size" "0"
-write "/proc/sys/net/ipv4/cipso_cache_enable" "0"
-write "/proc/sys/net/ipv4/cipso_rbm_strictvalid" "0"
-write "/proc/sys/net/ipv4/igmp_link_local_mcast_reports" "0"
-write "/proc/sys/net/ipv4/ipfrag_time" "24"
-write "/proc/sys/net/ipv4/tcp_fwmark_accept" "0"
-write "/proc/sys/net/ipv4/tcp_keepalive_intvl" "320"
-write "/proc/sys/net/ipv4/tcp_keepalive_time" "21600"
-write "/proc/sys/net/ipv4/tcp_probe_interval" "1800"
-write "/proc/sys/net/ipv4/tcp_slow_start_after_idle" "0"
-write "/proc/sys/net/ipv6/ip6frag_time" "48"
+write "${net}ipv4/conf/default/secure_redirects" "0"
+write "${net}ipv4/conf/default/accept_redirects" "0"
+write "${net}ipv4/conf/default/accept_source_route" "0"
+write "${net}ipv4/conf/all/secure_redirects" "0"
+write "${net}ipv4/conf/all/accept_redirects" "0"
+write "${net}ipv4/conf/all/accept_source_route" "0"
+write "${net}ipv4/ip_forward" "0"
+write "${net}ipv4/ip_dynaddr" "0"
+write "${net}ipv4/ip_no_pmtu_disc" "0"
+write "${net}ipv4/tcp_ecn" "0"
+write "${net}ipv4/tcp_timestamps" "0"
+write "${net}ipv4/tcp_tw_reuse" "1"
+write "${net}ipv4/tcp_fack" "1"
+write "${net}ipv4/tcp_sack" "1"
+write "${net}ipv4/tcp_dsack" "1"
+write "${net}ipv4/tcp_rfc1337" "1"
+write "${net}ipv4/tcp_tw_recycle" "1"
+write "${net}ipv4/tcp_window_scaling" "1"
+write "${net}ipv4/tcp_moderate_rcvbuf" "1"
+write "${net}ipv4/tcp_no_metrics_save" "1"
+write "${net}ipv4/tcp_synack_retries" "2"
+write "${net}ipv4/tcp_syn_retries" "2"
+write "${net}ipv4/tcp_keepalive_probes" "5"
+write "${net}ipv4/tcp_fin_timeout" "30"
+write "${net}core/rmem_max" "261120"
+write "${net}core/wmem_max" "261120"
+write "${net}core/rmem_default" "261120"
+write "${net}core/wmem_default" "261120"
+write "${net}core/netdev_max_backlog" "128"
+write "${net}core/netdev_tstamp_prequeue" "0"
+write "${net}ipv4/cipso_cache_bucket_size" "0"
+write "${net}ipv4/cipso_cache_enable" "0"
+write "${net}ipv4/cipso_rbm_strictvalid" "0"
+write "${net}ipv4/igmp_link_local_mcast_reports" "0"
+write "${net}ipv4/ipfrag_time" "24"
+write "${net}ipv4/tcp_fwmark_accept" "0"
+write "${net}ipv4/tcp_keepalive_intvl" "320"
+write "${net}ipv4/tcp_keepalive_time" "21600"
+write "${net}ipv4/tcp_probe_interval" "1800"
+write "${net}ipv4/tcp_slow_start_after_idle" "0"
+write "${net}ipv6/ip6frag_time" "48"
 }

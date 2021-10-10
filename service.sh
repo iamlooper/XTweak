@@ -10,7 +10,7 @@ do
 done
 
 # Sleep until some time to complete init
-sleep 120
+sleep 60
 
 # Start qcom optimization
 sh "${MODPATH}script/xqcom.sh"

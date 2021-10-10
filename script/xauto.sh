@@ -25,27 +25,27 @@ do
        break
     fi
     # Check screen state
-    _screen_state
+    screen_state
     if [ "$($bb cat /sys/class/leds/lcd-backlight/brightness)" = "0" ] || [ "$($bb cat /sys/class/backlight/panel*-backlight/brightness)" = "0" ] || [ "$SCRN_ON" = "0" ]; then    
     echo "[*] Device has being turned off. Applied Accumulator mode" >> $LOG
     echo "" >> $LOG
-    _accumulator
+    accumulator
     $bb sleep 30
     fi
     # Check battery status
-    _battery_status
+    battery_status
     if [ "$BATT_STATUS" = "Charging" ]; then
     echo "[*] Device is being charged, applied Accumulator mode to reduce battery cycles for better battery backup." >> $LOG
     echo "" >> $LOG
-    _accumulator
+    accumulator
     $bb sleep 60
     fi
     # Check battery %
-    _battery_percentage
+    battery_percentage
     if [ "$BATT_LVL" -eq "25" ]; then
     echo "[*] Battery has reached 25%, applied Accumulator mode to prolong juicy battery backup." >> $LOG
     echo "" >> $LOG
-    _accumulator
+    accumulator
     elif [ "$BATT_LVL" -eq "5" ]; then
     echo "[*] Battery is about to die, only 5% remaining." >> $LOG 
     echo "" >> $LOG
@@ -56,7 +56,7 @@ do
     $bb sleep 60
     fi
     # Check ram info
-    _ram_info
+    ram_info
     if [ "$AVAIL_RAM" -le "$FULL_RAM" ]; then
     echo "[*] RAM is full, cleared RAM caches." >> $LOG
     echo "" >> $LOG
@@ -68,7 +68,7 @@ do
     if [ "$($bb grep -Eo "$gpid" "$toptsdir")" ] || [ "$($bb grep -Eo "$gpid" "$toptcdir")" ]; then
     echo "[*] Playing games, changed to Potency mode." >> $LOG
     echo "" >> $LOG
-    _potency
+    potency
     $bb sleep 60
     fi
     done
@@ -77,7 +77,7 @@ do
     if [ "$($bb grep -Eo "$spid" "$toptsdir")" ] || [ "$($bb grep -Eo "$spid" "$toptcdir")" ]; then
     echo "[*] Using social media and streaming apps, applied Equalizer mode." >> $LOG
     echo "" >> $LOG
-    _equalizer
+    equalizer
     $bb sleep 60
     fi
     done
@@ -86,7 +86,7 @@ do
     if [ "$($bb grep -Eo "$bpid" "$toptsdir")" ] || [ "$($bb grep -Eo "$bpid" "$toptcdir")" ]; then  
     echo "[*] Using benchmarking and heavy apps, applied Output mode." >> $LOG
     echo "" >> $LOG
-    _output
+    output
     $bb sleep 60
     fi
     done

@@ -103,9 +103,11 @@ echo -e $blue "[11] Doze Optimization"
 echo ""
 echo -e $blue "[12] FS-Trim Optimization"
 echo ""
-echo -e $blue "[13] Disable Thermal"
+echo -e $blue "[13] Net Optimization"
 echo ""
-echo -e $blue "[14] Enable Thermal"
+echo -e $blue "[14] Disable Thermal"
+echo ""
+echo -e $blue "[15] Enable Thermal"
 echo ""
 echo -e $blue "[0] Exit"
 echo ""
@@ -122,7 +124,7 @@ $bb sh "${MODPATH}script/xmenu.sh"
 2) echo -e $cyan "[*] Appying Accumulator..." 
 $setprop persist.xtweak.mode "2" 2>/dev/null
 logging_system >/dev/null 2>&1
-_accumulator &>/dev/null
+accumulator &>/dev/null
 echo -e $cyan "[*] Done!"
 $bb sleep 2.5
 $bb sh "${MODPATH}script/xmenu.sh"
@@ -130,7 +132,7 @@ $bb sh "${MODPATH}script/xmenu.sh"
 3) echo -e $cyan "[*] Applying Equalizer..." 
 $setprop persist.xtweak.mode "3" 2>/dev/null
 logging_system >/dev/null 2>&1
-_equalizer &>/dev/null
+equalizer &>/dev/null
 echo -e $cyan "[*] Done!"
 $bb sleep 2.5
 $bb sh "${MODPATH}script/xmenu.sh"
@@ -138,7 +140,7 @@ $bb sh "${MODPATH}script/xmenu.sh"
 4) echo -e $cyan "[*] Applying Potency..." 
 $setprop persist.xtweak.mode "4" 2>/dev/null
 logging_system >/dev/null 2>&1
-_potency &>/dev/null
+potency &>/dev/null
 echo -e $cyan "[*] Done!"
 $bb sleep 2.5
 $bb sh "${MODPATH}script/xmenu.sh"
@@ -146,7 +148,7 @@ $bb sh "${MODPATH}script/xmenu.sh"
 5) echo -e $cyan "[*] Applying Output..." 
 $setprop persist.xtweak.mode "5" 2>/dev/null
 logging_system >/dev/null 2>&1
-_output &>/dev/null
+output &>/dev/null
 echo -e $cyan "[*] Done!"
 $bb sleep 2.5
 $bb sh "${MODPATH}script/xmenu.sh"
@@ -207,7 +209,13 @@ echo -e $cyan "[*] Done!"
 $bb sleep 2.5
 $bb sh "${MODPATH}script/xmenu.sh"
 ;;
-13) echo -e $cyan "[*] Disabling thermal..." 
+13) echo -e $cyan "[*] Applying net opt..." 
+x_net &>/dev/null
+echo -e $cyan "[*] Done!"
+$bb sleep 2.5
+$bb sh "${MODPATH}script/xmenu.sh"
+;;
+14) echo -e $cyan "[*] Disabling thermal..." 
 stop thermal 2>/dev/null
 stop thermald 2>/dev/null
 stop thermalservice 2>/dev/null
@@ -219,7 +227,7 @@ echo -e $cyan "[*] Done!"
 $bb sleep 2.5
 $bb sh "${MODPATH}script/xmenu.sh"
 ;;
-14) echo -e $cyan "[*] Enabling thermal..."
+15) echo -e $cyan "[*] Enabling thermal..."
 start thermal 2>/dev/null
 start thermald 2>/dev/null
 start thermalservice 2>/dev/null
