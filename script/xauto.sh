@@ -52,7 +52,7 @@ do
     else
     echo "[*] No heavy or noticeable usage found, applied Equalizer mode." >>  $LOG
     echo "" >> $LOG
-    _equalizer
+    equalizer
     $bb sleep 60
     fi
     # Check ram info
