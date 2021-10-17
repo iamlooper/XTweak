@@ -3,15 +3,9 @@
 # MMT - BOURNE SETUP SCRIPT
 ###########################
 
-# Config Vars
+# CONFIG VARS
 # Choose if you want to skip mount for your module or not.
 SKIPMOUNT=false
-# Set true if you want to load system.prop
-PROPFILE=true
-# Set true if you want to load post-fs-data.sh
-POSTFSDATA=false
-# Set true if you want to load service.sh
-LATESTARTSERVICE=true
 # Set true if you want to clean old files in module before injecting new module
 CLEANSERVICE=true
 # Select true if you want to want to debug
@@ -29,23 +23,23 @@ REPLACE="
 "
 
 # Set what you want to be displayed on header on installation process
-mod_info_print(){
+info_print(){
 awk '{print}' "$MODPATH"/xtweak_banner
 ui_print ""
 ui_print "[⚡] UNIVERSAL POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡]"
 }
 
 # Default extraction path is to $MODPATH. Change the logic to whatever you want.
-install_module(){
+init_main(){
 # Remove old XTweak dir
 rm -rf "/storage/emulated/0/XTweak"
 mkdir -p "/storage/emulated/0/XTweak"
 
 # Unzip
-unzip -o "$ZIPFILE" 'addon/*' -d $TMPDIR >&2
-unzip -o "$ZIPFILE" 'system/*' -d $MODPATH >&2
-unzip -o "$ZIPFILE" 'script/*' -d $MODPATH >&2
-unzip -o "$ZIPFILE" 'bin/*' -d $MODPATH >&2
+#unzip -o "$ZIPFILE" 'addon/*' -d $TMPDIR >&2
+#unzip -o "$ZIPFILE" 'system/*' -d $MODPATH >&2
+#unzip -o "$ZIPFILE" 'script/*' -d $MODPATH >&2
+#unzip -o "$ZIPFILE" 'bin/*' -d $MODPATH >&2
 
 # Preparing test and rest settings
 ui_print "[*] Preparing..."
@@ -116,8 +110,8 @@ fi
 ui_print "[*] Extracting XTweak files..."
 sleep 1.5
 
-# Load Vol Key Selector
-. $TMPDIR/addon/Volume-Key-Selector/install.sh
+# Load vksel
+load_vksel
 
 ui_print "[*] Installing XTweak..."
 sleep 2

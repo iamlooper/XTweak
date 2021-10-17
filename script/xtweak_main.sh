@@ -4,29 +4,29 @@
 # Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
 # Don't take any work from here until you maintain proper credits of respective devs.
 
-MODPATH="/data/adb/modules/xtweak/"
+modpath="/data/adb/modules/xtweak/"
 
 # Load lib
-. "${MODPATH}script/xtweak.sh"
+. "${modpath}script/xtweak.sh"
 
-MODE=$($getprop persist.xtweak.mode)
+mode=$(getprop persist.xtweak.mode)
 
 # Path variables
-XT="/storage/emulated/0/XTweak"
-if [ ! -d "$XT" ]; then 
-$bb mkdir "$XT"
+xt="/storage/emulated/0/XTweak"
+if [ ! -d "${xt}" ]; then 
+mkdir "${xt}"
 fi
 
 # Setting up XTweak
-if [ "$MODE" = "1" ]; then
-M=AUTO-X
+if [ "${mode}" = "1" ]; then
+m=AUTO-X
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 echo "on" > "/data/xauto.txt"
-$bb setsid "${MODPATH}script/xauto.sh" >/data/xauto.log 2>&1 < /dev/null &
+(. "${modpath}script/xauto.sh" &) &
 
-elif [ "$MODE" = "2" ]; then
-M=ACCUMULATOR
+elif [ "${mode}" = "2" ]; then
+m=ACCUMULATOR
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
@@ -34,8 +34,8 @@ x_cgroup &>/dev/null
 accumulator
 x_net &>/dev/null
 
-elif [ "$MODE" = "3" ]; then
-M=EQUALIZER
+elif [ "${mode}" = "3" ]; then
+m=EQUALIZER
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
@@ -43,8 +43,8 @@ x_cgroup &>/dev/null
 equalizer
 x_net &>/dev/null
 
-elif [ "$MODE" = "4" ]; then
-M=POTENCY
+elif [ "${mode}" = "4" ]; then
+m=POTENCY
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null
@@ -52,8 +52,8 @@ x_cgroup &>/dev/null
 potency
 x_net &>/dev/null
 
-elif [ "$MODE" = "5" ]; then
-M=OUTPUT
+elif [ "${mode}" = "5" ]; then
+m=OUTPUT
 echo "off" > "/data/xauto.txt"
 logging_system &>/dev/null
 x_sqlite &>/dev/null

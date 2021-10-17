@@ -4,10 +4,10 @@
 # Credits : p3dr0zzz (pedrozzz0 @ github), tytydraco (tytydraco @ github), Matt Yang (yc9559 @ github), Ferat Kesaev (feravolt @ github)
 # Don't take any work from here until you maintain proper credits of respective devs.
 
-MODPATH="/data/adb/modules/xtweak/"
+modpath="/data/adb/modules/xtweak/"
 
 bb="/data/adb/magisk/busybox"
 
 # Start main
-$bb sh "${MODPATH}script/xtweak_main.sh"
+$bb sh "${modpath}script/xtweak_main.sh"
 

@@ -8,8 +8,6 @@
 # Basic Tool Functions
 ##############################
 
-su="/data/adb/modules/xtweak/bin/su"
-
 sqlite="/data/adb/modules/xtweak/bin/sqlite3"
 
 zipalign="/data/adb/modules/xtweak/bin/zipalign"
@@ -22,7 +20,7 @@ write(){
 	[ ! -f "$1" ] && return 1
 
 	# Make file write-able in case it is not already
-	$bb chmod +w "$1" 2>/dev/null
+	chmod +w "$1" 2>/dev/null
 
 	# Write the new value and bail if there's an error
 	if ! echo "$2" > "$1" 2>/dev/null
@@ -41,7 +39,7 @@ lock(){
 	[ ! -f "$1" ] && return 1
 
 	# Make file write-able in case it is not already
-	$bb chmod +w "$1" 2>/dev/null
+	chmod +w "$1" 2>/dev/null
 
 	# Write the new value and bail if there's an error
 	if ! echo "$2" > "$1" 2>/dev/null
@@ -51,7 +49,7 @@ lock(){
 	fi
 
     # Lock $1
-    $bb chmod 0444 "$1"
+    chmod 0444 "$1"
 
 	# Log the success
 	echo "[*] Locked: $1 --> $2"
@@ -60,8 +58,8 @@ lock(){
 # $1:value $2:file-path
 mutate(){
     if [ -f "$2" ]; then
-        $bb chmod 0666 "$2" 2>/dev/null
-        echo "$1" > "$2"
+    chmod 0666 "$2" 2>/dev/null
+    echo "$1" > "$2"
     fi
 }
 
@@ -86,42 +84,6 @@ sched_tasks_potency="10"
 
 sched_tasks_output="6"
 
-if [ -e "/system/bin/getprop" ]; then
-getprop="/system/bin/getprop"
-else
-getprop="/system/xbin/getprop"
-fi
-
-if [ -e "/system/bin/resetprop" ]; then
-resetprop="/system/bin/resetprop"
-else
-resetprop="/system/xbin/resetprop"
-fi
-
-if [ -e "/system/bin/dumpsys" ]; then
-dumpsys="/system/bin/dumpsys"
-else
-dumpsys="/system/xbin/dumpsys"
-fi
-
-if [ -e "/system/bin/setprop" ]; then
-setprop="/system/bin/setprop"
-else
-setprop="/system/xbin/setprop"
-fi
-
-if [ -e "/system/bin/am" ]; then
-am="/system/bin/am"
-else
-am="/system/xbin/am"
-fi
-
-if [ -e "/system/bin/pm" ]; then
-pm="/system/bin/pm"
-else
-pm="/system/xbin/pm"
-fi
-
 ##############################
 # Kernel Variables
 ###############################
@@ -145,169 +107,169 @@ net="/proc/sys/net/"
 
 # Fetch ram info
 ram_info(){
-TOTAL_RAM=$($bb free -m | $bb awk '/Mem:/{print $2}')
-FULL_RAM=$((TOTAL_RAM * 20 / 100))
-AVAIL_RAM=$($bb free -m | $bb awk '/Mem:/{print $7}')
+total_ram=$(free -m | awk '/Mem:/{print $2}')
+full_ram=$((total_ram * 20 / 100))
+avail_ram=$(free -m | awk '/Mem:/{print $7}')
 }
 
 # Fetch battery status
 battery_status(){
 if [ -e "/sys/class/power_supply/battery/status" ]; then
-BATT_STATUS=$($bb cat /sys/class/power_supply/battery/status)
+batt_status=$(cat /sys/class/power_supply/battery/status)
             
 else
-BATT_STATUS=$($dumpsys battery | $bb awk '/status/{print $2}')
+batt_status=$(dumpsys battery | awk '/status/{print $2}')
 fi
 }
 
 # Fetch battery level
 battery_percentage(){               
 if [ -e "/sys/class/power_supply/battery/capacity" ]; then
-BATT_LVL=$($bb cat /sys/class/power_supply/battery/capacity)
+batt_lvl=$(cat /sys/class/power_supply/battery/capacity)
                   
 else
-BATT_LVL=$($dumpsys battery | $bb awk '/level/{print $2}')
+batt_lvl=$(dumpsys battery | awk '/level/{print $2}')
 fi
 }
 
 # Fetch screen state
 screen_state(){
-SCRN_STATE=$($dumpsys power | $bb grep state=O | $bb cut -d "=" -f 2)
+scrn_state=$(dumpsys power | grep state=O | cut -d "=" -f 2)
 if [ "$scrn_state" = "ON" ]; then 
-SCRN_ON=1
+scrn_on=1
 
 else 
-SCRN_ON=0
+scrn_on=0
 fi
 }
 
 logging_system(){
 
-LOG="/storage/emulated/0/XTweak/xtweak.log"
+log="/storage/emulated/0/XTweak/xtweak.log"
 
 # Clear logs before logging again
-$bb rm -rf "$LOG"
+rm -rf "$log"
 
 # Fetch brand info
-BRAND=$($getprop ro.product.brand)
+brand=$(getprop ro.product.brand)
 
 # Fetch device model info
-MODEL=$($getprop ro.product.model)
+model=$(getprop ro.product.model)
 
 # Fetch ROM id
-ROM=$($getprop ro.build.display.id)
+rom=$(getprop ro.build.display.id)
 
 # Fetch system language info
-LANG=$($getprop persist.sys.locale) 
+lang=$(getprop persist.sys.locale) 
 
 # Fetch android release version
-ANDROID=$($getprop ro.build.version.release)
+android=$(getprop ro.build.version.release)
 
 # Fetch android sdk info
-SDK=$($getprop ro.build.version.sdk) 
+sdk=$(getprop ro.build.version.sdk) 
 
 # Fetch kernel related info
-KERNEL=$($bb uname -r)
+kernel=$(uname -r)
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-  if [ "$($bb cat ${cpu}scaling_available_governors | $bb grep 'sched')" ]; then
-      KERNEL_TYPE="EAS"
-  elif [ "$($bb cat ${cpu}scaling_available_governors | $bb grep 'interactive')" ]; then
-      KERNEL_TYPE="HMP"
+  if [ "$(cat ${cpu}scaling_available_governors | grep 'sched')" ]; then
+      kernel_type="EAS"
+  elif [ "$(cat ${cpu}scaling_available_governors | grep 'interactive')" ]; then
+      kernel_type="HMP"
   else
-      KERNEL_TYPE="UNKNOWN"
+      kernel_type="UNKNOWN"
   fi
 done
 
 # Fetch Arch info
-ARCH=$($getprop ro.product.cpu.abi)
+archh=$(getprop ro.product.cpu.abi)
 
 # Fetch SOC (System On-Chip) info
-SOC=$($getprop ro.board.platform) 
+soc=$(getprop ro.board.platform) 
 
 # Fetch root method
-ROOT=$($su -v) 
+root=$(su -v) 
 
 # Fetch ram info
-TOTAL_RAM=$($bb free -m | $bb awk '/Mem:/{print $2}')
-AVAIL_RAM=$($bb free -m | $bb awk '/Mem:/{print $7}')
+total_ram=$(free -m | awk '/Mem:/{print $2}')
+avail_ram=$(free -m | awk '/Mem:/{print $7}')
 
 # Fetch battery info
-BATT_LVL=$($bb cat /sys/class/power_supply/battery/capacity)
-BATT_CPCTY=$($bb cat /sys/class/power_supply/battery/charge_full_design)
-if [ "$BATT_CPCTY" = "" ]; then
-    BATT_CPCTY=$($dumpsys batterystats | $bb grep Capacity: | $bb awk '{print $2}' | $bb cut -d "," -f 1)
+batt_lvl=$(cat /sys/class/power_supply/battery/capacity)
+batt_cpcty=$(cat /sys/class/power_supply/battery/charge_full_design)
+if [ "$batt_cpcty" = "" ]; then
+    batt_cpcty=$(dumpsys batterystats | grep Capacity: | awk '{print $2}' | cut -d "," -f 1)
            
-elif [ "$BATT_CPCTY" -gt "1000000" ]; then
-    BATT_CPCTY=$((BATT_CPCTY / 1000))
+elif [ "$batt_cpcty" -gt "1000000" ]; then
+    batt_cpcty=$((batt_cpcty / 1000))
 fi
 
 # Fetch XTweak info
-TITLE=$($bb grep name= "${MODPATH}module.prop" | $bb sed "s/name=//")
-VER=$($bb grep version= "${MODPATH}module.prop" | $bb sed "s/version=//")
-CODENAME=$($bb grep codeName= "${MODPATH}module.prop" | $bb sed "s/codeName=//")
-STATUS=$($bb grep Status= "${MODPATH}module.prop" | $bb sed "s/Status=//")
-AUTHOR=$($bb grep author= "${MODPATH}module.prop" | $bb sed "s/author=//")
+title=$(grep name= "${modpath}module.prop" | sed "s/name=//")
+ver=$(grep version= "${modpath}module.prop" | sed "s/version=//")
+codename=$(grep codeName= "${modpath}module.prop" | sed "s/codeName=//")
+status=$(grep Status= "${modpath}module.prop" | sed "s/Status=//")
+author=$(grep author= "${modpath}module.prop" | sed "s/author=//")
 
 ##############################
 # Logging System Functions
 ###############################
 
 # Logging system header
-$bb sleep 3
-$bb awk '{print}' "${MODPATH}xtweak_banner" >> $LOG
-echo "[⚡] POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡] " >> $LOG
-echo "" >> $LOG
-$bb sleep 2
-echo "[*] CHECKING DEVICE INFO..." >> $LOG
-$bb sleep 2
-echo "~ BRAND : $BRAND " >> $LOG
-echo "~ MODEL : $MODEL " >> $LOG
-echo "~ ROM : $ROM " >> $LOG
-echo "~ SYSTEM LANGUAGE : $LANG " >> $LOG
-echo "~ ANDROID : $ANDROID " >> $LOG
-echo "~ API LEVEL : $SDK " >> $LOG
-echo "~ KERNEL : $KERNEL " >> $LOG
-echo "~ KERNEL TYPE : $KERNEL_TYPE " >> $LOG
-echo "~ CPU ARCHITECTURE : $ARCH " >> $LOG
-echo "~ SOC : $SOC " >> $LOG
-echo "~ ROOT METHOD : $ROOT " >> $LOG
-echo "~ TOTAL RAM : $TOTAL_RAM MB " >> $LOG
-echo "~ AVAILABLE RAM : $AVAIL_RAM MB" >> $LOG
-echo "~ BATTERY LEVEL : $BATT_LVL %" >> $LOG
-echo "~ BATTERY CAPACITY : $BATT_CPCTY MAH" >> $LOG
-echo "" >> $LOG
-echo "~ NAME : $TITLE " >> $LOG
-echo "~ VERSION : $VER " >> $LOG
-echo "~ CODENAME : $CODENAME " >> $LOG
-echo "~ STATUS : $STATUS " >> $LOG
-echo "~ AUTHOR : $AUTHOR " >> $LOG
-echo "" >> $LOG
-echo "[*] CURRENT MODE: $M " >> $LOG
-echo "" >> $LOG
-echo "[*] STARTING TWEAKS AT $($bb date) " >> $LOG
-echo "" >> $LOG
-$bb sleep 3
+sleep 3
+awk '{print}' "${modpath}xtweak_banner" >> $log
+echo "[⚡] POWERFUL FORCEFULNESS KERNEL TWEAKER [⚡] " >> $log
+echo "" >> $log
+sleep 2
+echo "[*] CHECKING DEVICE INFO..." >> $log
+sleep 2
+echo "~ BRAND : $brand " >> $log
+echo "~ MODEL : $model " >> $log
+echo "~ ROM : $rom " >> $log
+echo "~ SYSTEM LANGUAGE : $lang " >> $log
+echo "~ ANDROID : $android " >> $log
+echo "~ API LEVEL : $sdk " >> $log
+echo "~ KERNEL : $kernel " >> $log
+echo "~ KERNEL TYPE : $kernel_type " >> $log
+echo "~ CPU ARCHITECTURE : $archh " >> $log
+echo "~ SOC : $soc " >> $log
+echo "~ ROOT METHOD : $root " >> $log
+echo "~ TOTAL RAM : $total_ram MB " >> $log
+echo "~ AVAILABLE RAM : $avail_ram MB" >> $log
+echo "~ BATTERY LEVEL : $batt_lvl %" >> $log
+echo "~ BATTERY CAPACITY : $batt_cpcty MAH" >> $log
+echo "" >> $log
+echo "~ NAME : $title " >> $log
+echo "~ VERSION : $ver " >> $log
+echo "~ CODENAME : $codename " >> $log
+echo "~ STATUS : $status " >> $log
+echo "~ AUTHOR : $author " >> $log
+echo "" >> $log
+echo "[*] CURRENT MODE: $m " >> $log
+echo "" >> $log
+echo "[*] STARTING TWEAKS AT $(date) " >> $log
+echo "" >> $log
+sleep 3
 
 # Logging system footer
-echo "[*] CLEANED VARIOUS JUNK FILES" >> $LOG
-echo "[*] OPTIMIZED VARIOUS DOZE AND GMS PARAMETERS" >> $LOG
-echo "[*] APPLIED CGROUP OPTIMIZATIONS" >> $LOG
-echo "[*] EXECUTED SQLITE OPTIMIZATIONS" >> $LOG
-echo "[*] ZIPALIGNED SYSTEM AND USER APKS" >> $LOG
-echo "[*] APPLIED KERNEL TWEAKS" >> $LOG
-echo "[*] OPTIMIZED CPU VALUES" >> $LOG
-echo "[*] IMPROVED GPU PARAMETERS" >> $LOG
-echo "[*] TWEAKED FS VALUES" >> $LOG
-echo "[*] OPTIMIZED ENTROPY" >> $LOG
-echo "[*] EXECUTED SCHEDULER TWEAKS" >> $LOG
-echo "[*] IMPROVED KERNEL FREEZING AND KERNEL PANIC PARAMETERS" >> $LOG
-echo "[*] DISABLED GPU LOGGING" >> $LOG
-echo "[*] DISABLED RMNET AND LOGGING DAEMONS" >> $LOG
-echo "[*] OPTIMIZED POWER EFFICIENCY" >> $LOG
-echo "" >> $LOG
-echo "[*] ENDED TWEAKS AT $($bb date) " >> $LOG
-echo "" >> $LOG
+echo "[*] CLEANED VARIOUS JUNK FILES" >> $log
+echo "[*] OPTIMIZED VARIOUS DOZE AND GMS PARAMETERS" >> $log
+echo "[*] APPLIED CGROUP OPTIMIZATIONS" >> $log
+echo "[*] EXECUTED SQLITE OPTIMIZATIONS" >> $log
+echo "[*] ZIPALIGNED SYSTEM AND USER APKS" >> $log
+echo "[*] APPLIED KERNEL TWEAKS" >> $log
+echo "[*] OPTIMIZED CPU VALUES" >> $log
+echo "[*] IMPROVED GPU PARAMETERS" >> $log
+echo "[*] TWEAKED FS VALUES" >> $log
+echo "[*] OPTIMIZED ENTROPY" >> $log
+echo "[*] EXECUTED SCHEDULER TWEAKS" >> $log
+echo "[*] IMPROVED KERNEL FREEZING AND KERNEL PANIC PARAMETERS" >> $log
+echo "[*] DISABLED GPU LOGGING" >> $log
+echo "[*] DISABLED RMNET AND LOGGING DAEMONS" >> $log
+echo "[*] OPTIMIZED POWER EFFICIENCY" >> $log
+echo "" >> $log
+echo "[*] ENDED TWEAKS AT $(date) " >> $log
+echo "" >> $log
 }
 
 #############################
@@ -364,7 +326,7 @@ write "${vm}memory_plus" "0"
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
+    avail_govs="$(cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -537,22 +499,22 @@ disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
-$resetprop ro.config.uksm.support false
+resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
-$resetprop ro.config.ksm.support false
+resetprop ro.config.ksm.support false
 
 # HWUI Tweaks
 x_hwui
 
 # EXT4 and F2FS Tweaks
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
-#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do
+#mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do 
+#mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,nobarrier ${f2fs}
+#for f2fs in $(cat /proc/mounts | grep f2fs | $cut -d ' ' -f2); do 
+#mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -584,7 +546,7 @@ start mpdecision 2>/dev/null
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($bb cat "${queue}scheduler")
+    avail_scheds=$(cat "${queue}scheduler")
 	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
@@ -707,7 +669,7 @@ write "${vm}memory_plus" "0"
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
+    avail_govs="$(cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -880,22 +842,22 @@ disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
-$resetprop ro.config.uksm.support false
+resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
-$resetprop ro.config.ksm.support false
+resetprop ro.config.ksm.support false
 
 # HWUI Tweaks
 x_hwui
 
 # EXT4 and F2FS Tweaks
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
-#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do
+#mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do 
+#mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,nobarrier ${f2fs}
+#for f2fs in $(cat /proc/mounts | grep f2fs | $cut -d ' ' -f2); do 
+#mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -924,7 +886,7 @@ stop_services
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($bb cat "${queue}scheduler")
+    avail_scheds=$(cat "${queue}scheduler")
 	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
@@ -1047,7 +1009,7 @@ write "${vm}memory_plus" "0"
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
+    avail_govs="$(cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -1219,22 +1181,22 @@ disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
-$resetprop ro.config.uksm.support false
+resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
-$resetprop ro.config.ksm.support false
+resetprop ro.config.ksm.support false
 
 # HWUI Tweaks
 x_hwui
 
 # EXT4 and F2FS Tweaks
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
-#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do
+#mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do 
+#mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,nobarrier ${f2fs}
+#for f2fs in $(cat /proc/mounts | grep f2fs | $cut -d ' ' -f2); do 
+#mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -1263,7 +1225,7 @@ stop_services
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($bb cat "${queue}scheduler")
+    avail_scheds=$(cat "${queue}scheduler")
 	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
@@ -1386,7 +1348,7 @@ write "${vm}memory_plus" "0"
 # CPU Tweaks
 for cpu in /sys/devices/system/cpu/cpu*/cpufreq/
 do
-    avail_govs="$($bb cat "${cpu}scaling_available_governors")"
+    avail_govs="$(cat "${cpu}scaling_available_governors")"
     if [ "$avail_govs" = *"schedutil"* ]
     then
         write "${cpu}scaling_governor" "schedutil"
@@ -1558,22 +1520,22 @@ disable_debuggers
 
 # Disable UKSM and KSM to save CPU cycles
 write "/sys/kernel/mm/uksm/run" "0"
-$resetprop ro.config.uksm.support false
+resetprop ro.config.uksm.support false
 write "/sys/kernel/mm/ksm/run" "0"
-$resetprop ro.config.ksm.support false
+resetprop ro.config.ksm.support false
 
 # HWUI Tweaks
 x_hwui
 
 # EXT4 and F2FS Tweaks
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do
-#$bb mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do
+#mount -o remount,noatime,nodiratime,discard,nobarrier,max_batch_time=30000,min_batch_time=15000,commit=40 ${ext4}
 #done
-#for ext4 in $($bb cat /proc/mounts | $bb grep ext4 | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
+#for ext4 in $(cat /proc/mounts | grep ext4 | $cut -d ' ' -f2); do 
+#mount -o remount,noatime,delalloc,noauto_da_alloc,nodiratime,nobarrier,discard,max_batch_time=30000,min_batch_time=15000,commit=60 ${ext4}
 #done
-#for f2fs in $($bb cat /proc/mounts | $bb grep f2fs | $$bb cut -d ' ' -f2); do 
-#$bb mount -o remount,nobarrier ${f2fs}
+#for f2fs in $(cat /proc/mounts | grep f2fs | $cut -d ' ' -f2); do 
+#mount -o remount,nobarrier ${f2fs}
 #done
 for dsi in /sys/kernel/debug/dsi*
 do 
@@ -1602,7 +1564,7 @@ stop_services
 for queue in /sys/block/*/queue/
 do   
 # Choose the first scheduler available
-    avail_scheds=$($bb cat "${queue}scheduler")
+    avail_scheds=$(cat "${queue}scheduler")
 	for sched in deadline cfq anxiety noop kyber none
 	do
 		if [ "$avail_scheds" = *"$sched"* ]; then
@@ -1682,11 +1644,11 @@ write "/proc/sys/kernel/random/write_wakeup_threshold" "384"
 x_sqlite(){
 SQ_LOG="/storage/emulated/0/XTweak/sqlite.log"
 if [ -f "$SQ_LOG" ]; then
-	$bb rm -rf "$SQ_LOG"
+	rm -rf "$SQ_LOG"
 fi
 echo " --- XTweak 2021 --- " >> $SQ_LOG
 echo "[*] Optimizing system databases..." >> $SQ_LOG
-for i in $($bb find /d* -iname "*.db"); do
+for i in $(find /d* -iname "*.db"); do
 $sqlite "$i" 'VACUUM;'
 resVac=$?
 if [ "$resVac" = "0" ]; then
@@ -1720,7 +1682,7 @@ x_zipalign(){
 ZA_LOG="/storage/emulated/0/XTweak/zipalign.log"
 ZA_DB="/storage/emulated/0/XTweak/zipalign.db"
 if [ -f "$ZA_LOG" ]; then
-	$bb rm -rf "$ZA_LOG"
+	rm -rf "$ZA_LOG"
 
 elif [ ! -f "$ZA_DB" ]; then
 	touch "$ZA_DB"
@@ -1730,20 +1692,20 @@ for DIR in /system/app/* /data/app/* /system/product/app/* /system/priv-app/* /s
 do
    cd $DIR  
    for APK in *.apk; do
-    if [ "$APK" -ot "/storage/emulated/0/XTweak/zipalign.db" ] || [ "$($bb grep "$DIR/$APK" "/dev/XTweak/zipalign.db" | $bb wc -l)" -gt "0" ]; then
+    if [ "$APK" -ot "/storage/emulated/0/XTweak/zipalign.db" ] || [ "$(grep "$DIR/$APK" "/dev/XTweak/zipalign.db" | wc -l)" -gt "0" ]; then
       echo -e "[*] Already checked: $DIR/$APK" >> $ZA_LOG
      else
       $zipalign -c 4 "$APK"
       if [ "$?" = "0" ]; then
         echo -e "[*] Already aligned: $DIR/$APK" >> $ZA_LOG
-        $bb grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK"  >> $ZA_DB
+        grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK"  >> $ZA_DB
       else
         echo -e "[*] Now aligning: $DIR/$APK" >> $ZA_LOG
         cd $APK
         $zipalign -f 4 "$APK" "/cache/$APK"
-        $bb cp -af -p "/cache/$APK" "$APK"
-        $bb rm -f "/cache/$APK"
-        $bb grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK" >> $ZA_DB
+        cp -af -p "/cache/$APK" "$APK"
+        rm -f "/cache/$APK"
+        grep "$DIR/$APK" "/storage/emulated/0/XTweak/zipalign.db" || echo "$DIR/$APK" >> $ZA_DB
       fi
     fi
   done
@@ -1755,44 +1717,44 @@ done
 ###############################
 
 x_clean(){
-$bb rm -rf /data/*.log
-$bb rm -rf /data/vendor/wlan_logs 
-$bb rm -rf /data/*.txt
-$bb rm -rf /cache/*.apk
-$bb rm -rf /data/anr/*
-$bb rm -rf /data/backup/pending/*.tmp
-$bb rm -rf /data/cache/*.* 
-$bb rm -rf /data/data/*.log 
-$bb rm -rf /data/data/*.txt 
-$bb rm -rf /data/log/*.log 
-$bb rm -rf /data/log/*.txt 
-$bb rm -rf /data/local/*.apk 
-$bb rm -rf /data/local/*.log 
-$bb rm -rf /data/local/*.txt 
-$bb rm -rf /data/mlog/* 
-$bb rm -rf /data/system/*.log 
-$bb rm -rf /data/system/*.txt 
-$bb rm -rf /data/system/dropbox/* 
-$bb rm -rf /data/system/usagestats/* 
-$bb rm -rf /data/system/shared_prefs/* 
-$bb rm -rf /data/tombstones/* 
-$bb rm -rf /sdcard/LOST.DIR 
-$bb rm -rf /sdcard/found000 
-$bb rm -rf /sdcard/LazyList 
-$bb rm -rf /sdcard/albumthumbs 
-$bb rm -rf /sdcard/kunlun 
-$bb rm -rf /sdcard/.CacheOfEUI 
-$bb rm -rf /sdcard/.bstats 
-$bb rm -rf /sdcard/.taobao 
-$bb rm -rf /sdcard/Backucup 
-$bb rm -rf /sdcard/MIUI/debug_log 
-$bb rm -rf /sdcard/ramdump 
-$bb rm -rf /sdcard/UnityAdsVideoCache 
-$bb rm -rf /sdcard/*.log 
-$bb rm -rf /sdcard/*.CHK 
-$bb rm -rf /sdcard/duilite 
-$bb rm -rf /sdcard/DkMiBrowserDemo 
-$bb rm -rf /sdcard/.xlDownload 
+rm -rf /data/*.log
+rm -rf /data/vendor/wlan_logs 
+rm -rf /data/*.txt
+rm -rf /cache/*.apk
+rm -rf /data/anr/*
+rm -rf /data/backup/pending/*.tmp
+rm -rf /data/cache/*.* 
+rm -rf /data/data/*.log 
+rm -rf /data/data/*.txt 
+rm -rf /data/log/*.log 
+rm -rf /data/log/*.txt 
+rm -rf /data/local/*.apk 
+rm -rf /data/local/*.log 
+rm -rf /data/local/*.txt 
+rm -rf /data/mlog/* 
+rm -rf /data/system/*.log 
+rm -rf /data/system/*.txt 
+rm -rf /data/system/dropbox/* 
+rm -rf /data/system/usagestats/* 
+rm -rf /data/system/shared_prefs/* 
+rm -rf /data/tombstones/* 
+rm -rf /sdcard/LOST.DIR 
+rm -rf /sdcard/found000 
+rm -rf /sdcard/LazyList 
+rm -rf /sdcard/albumthumbs 
+rm -rf /sdcard/kunlun 
+rm -rf /sdcard/.CacheOfEUI 
+rm -rf /sdcard/.bstats 
+rm -rf /sdcard/.taobao 
+rm -rf /sdcard/Backucup 
+rm -rf /sdcard/MIUI/debug_log 
+rm -rf /sdcard/ramdump 
+rm -rf /sdcard/UnityAdsVideoCache 
+rm -rf /sdcard/*.log 
+rm -rf /sdcard/*.CHK 
+rm -rf /sdcard/duilite 
+rm -rf /sdcard/DkMiBrowserDemo 
+rm -rf /sdcard/.xlDownload 
 }
 
 ##############################
@@ -1801,32 +1763,32 @@ $bb rm -rf /sdcard/.xlDownload
 
 x_doze(){
 # Stop certain services and restart it on boot
-if [ "$($bb pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | $bb wc -l)" = "1" ]; then
-$bb kill $($bb com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService)
+if [ "$(pidof com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService | wc -l)" = "1" ]; then
+kill $(com.qualcomm.qcrilmsgtunnel.QcrilMsgTunnelService)
 
-elif [ "$($bb pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver | $bb wc -l)" = "1" ]; then
-$bb kill $($bb pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver)
+elif [ "$(pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver | wc -l)" = "1" ]; then
+kill $(pidof com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver)
 
-elif [ "$($bb pidof com.google.android.gms.unstable | $bb wc -l)" = "1" ]; then
-$bb kill $($bb $bb pidof com.google.android.gms.unstable)
+elif [ "$(pidof com.google.android.gms.unstable | wc -l)" = "1" ]; then
+kill $(pidof com.google.android.gms.unstable)
 
-elif [ "$($bb pidof com.google.android.gms.wearable | $bb wc -l)" = "1" ]; then
-$bb kill $($bb $bb pidof com.google.android.gms.wearable)
+elif [ "$(pidof com.google.android.gms.wearable | wc -l)" = "1" ]; then
+kill $(pidof com.google.android.gms.wearable)
 
-elif [ "$($bb pidof com.google.android.gms.backup.backupTransportService | $bb wc -l)" = "1" ]; then
-$bb kill $($bb pidof com.google.android.gms.backup.backupTransportService)
+elif [ "$(pidof com.google.android.gms.backup.backupTransportService | wc -l)" = "1" ]; then
+kill $(pidof com.google.android.gms.backup.backupTransportService)
 
-elif [ "$($bb pidof com.google.android.gms.lockbox.LockboxService | $bb wc -l)" = "1" ]; then
-$bb kill $($bb pidof com.google.android.gms.lockbox.LockboxService)
+elif [ "$(pidof com.google.android.gms.lockbox.LockboxService | wc -l)" = "1" ]; then
+kill $(pidof com.google.android.gms.lockbox.LockboxService)
 
-elif [ "$($bb pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService | $bb wc -l)" = "1" ]; then
-$bb kill $($bb pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService)
+elif [ "$(pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService | wc -l)" = "1" ]; then
+kill $(pidof com.google.android.gms.auth.setup.devicesignals.LockScreenService)
 fi
 for i in $(ls /data/user/)
 do
 # Disable collective Device administrators
-$pm disable --user $i com.google.android.gms/com.google.android.gms.auth.managed.admin.DeviceAdminReceiver 2>/dev/null  
-$pm disable --user $i com.google.android.gms/com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver 2>/dev/null  
+pm disable --user $i com.google.android.gms/com.google.android.gms.auth.managed.admin.DeviceAdminReceiver 2>/dev/null  
+pm disable --user $i com.google.android.gms/com.google.android.gms.mdm.receivers.MdmDeviceAdminReceiver 2>/dev/null  
 # Disable both GMS and IMS 'Modify system settings' and restart it on boot
 cmd appops set --user $i com.google.android.gms WRITE_SETTINGS ignore
 cmd appops set --user $i com.google.android.ims WRITE_SETTINGS ignore
@@ -1838,15 +1800,15 @@ cmd appops set --user $i com.google.android.gms AUTO_START ignore
 cmd appops set --user $i com.google.android.ims AUTO_START ignore
 done
 # Optimize system settings (doze)
-$dumpsys deviceidle enable all
-$dumpsys deviceidle whitelist +com.android.systemui >/dev/null 2>&1
+dumpsys deviceidle enable all
+dumpsys deviceidle whitelist +com.android.systemui >/dev/null 2>&1
 settings put global dropbox_max_files 1
 settings put system anr_debugging_mechanism 0
 settings put global adaptive_battery_management_enabled 1
 settings put global aggressive_battery_saver 1
 settings put secure location_providers_allowed ' '
-$dumpsys deviceidle enable all
-$dumpsys deviceidle enabled all
+dumpsys deviceidle enable all
+dumpsys deviceidle enabled all
 settings put system display_color_enhance 1
 settings delete global device_idle_constants
 settings put global device_idle_constants inactive_to=60000,sensing_to=0,locating_to=0,location_accuracy=2000,motion_inactive_to=0,idle_after_inactive_to=0,idle_pending_to=60000,max_idle_pending_to=120000,idle_pending_factor=2.0,idle_to=900000,max_idle_to=21600000,idle_factor=2.0,max_temp_app_whitelist_duration=60000,mms_temp_app_whitelist_duration=30000,sms_temp_app_whitelist_duration=20000,light_after_inactive_to=10000,light_pre_idle_to=60000,light_idle_to=180000,light_idle_factor=2.0,light_max_idle_to=900000,light_idle_maintenance_min_budget=30000,light_idle_maintenance_max_budget=60000
@@ -1859,9 +1821,9 @@ settings put global device_idle_constants inactive_to=60000,sensing_to=0,locatin
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_task_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             echo "$temp_tid" > "/dev/$3/$2/tasks"
         done
     done
@@ -1870,8 +1832,8 @@ change_task_cgroup(){
 # $1:process_name $2:cgroup_name $3:"cpuset"/"stune"
 change_proc_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
-        comm="$($bb cat /proc/"$temp_pid"/comm)"
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+        comm="$(cat /proc/"$temp_pid"/comm)"
         echo "$temp_pid" > "/dev/$3/$2/cgroup.procs"
     done
 }
@@ -1879,10 +1841,10 @@ change_proc_cgroup(){
 # $1:task_name $2:thread_name $3:cgroup_name $4:"cpuset"/"stune"
 change_thread_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
                 echo "$temp_tid" > "/dev/$4/$3/tasks"
             fi
         done
@@ -1892,8 +1854,8 @@ change_thread_cgroup(){
 # $1:task_name $2:cgroup_name $3:"cpuset"/"stune"
 change_main_thread_cgroup(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
-        comm="$($bb cat /proc/"$temp_pid"/comm)"
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
+        comm="$(cat /proc/"$temp_pid"/comm)"
         echo "$temp_pid" > "/dev/$3/$2/tasks"
     done
 }
@@ -1901,9 +1863,9 @@ change_main_thread_cgroup(){
 # $1:task_name $2:hex_mask(0x00000003 is CPU0 and CPU1)
 change_task_affinity(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             taskset -p "$2" "$temp_tid" >> "$LOG_FILE"
         done
     done
@@ -1912,10 +1874,10 @@ change_task_affinity(){
 # $1:task_name $2:thread_name $3:hex_mask(0x00000003 is CPU0 and CPU1)
 change_thread_affinity(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
                 taskset -p "$3" "$temp_tid" >> "$LOG_FILE"
             fi
         done
@@ -1924,7 +1886,7 @@ change_thread_affinity(){
 
 # $1:task_name $2:nice(relative to 120)
 change_task_nice(){
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
             renice -n +40 -p "$temp_tid"
             renice -n -19 -p "$temp_tid"
@@ -1936,10 +1898,10 @@ change_task_nice(){
 # $1:task_name $2:thread_name $3:nice(relative to 120)
 change_thread_nice(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
                 renice -n +40 -p "$temp_tid"
                 renice -n -19 -p "$temp_tid"
                 renice -n "$3" -p "$temp_tid"
@@ -1950,9 +1912,9 @@ change_thread_nice(){
 
 # $1:task_name $2:priority(99-x, 1<=x<=99)
 change_task_rt(){
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
             chrt -f -p "$2" "$temp_tid" >> "$LOG_FILE"
         done
     done
@@ -1961,10 +1923,10 @@ change_task_rt(){
 # $1:task_name $2:thread_name $3:priority(99-x, 1<=x<=99)
 change_thread_rt(){
     local comm
-    for temp_pid in $(echo "$ps_ret" | $bb grep -i -E "$1" | $bb awk '{print $1}'); do
+    for temp_pid in $(echo "$ps_ret" | grep -i -E "$1" | awk '{print $1}'); do
         for temp_tid in $(ls "/proc/$temp_pid/task/"); do
-            comm="$($bb cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
-            if [ "$(echo "$comm" | $bb grep -i -E "$2")" != "" ]; then
+            comm="$(cat /proc/"$temp_pid"/task/"$temp_tid"/comm)"
+            if [ "$(echo "$comm" | grep -i -E "$2")" != "" ]; then
                 chrt -f -p "$3" "$temp_tid" >> "$LOG_FILE"
             fi
         done
@@ -2096,7 +2058,7 @@ change_thread_cgroup "\.composer" "^Binder" "top-app" "cpuset"
 unpin_proc "zygote|usap"
 change_task_high_prio "zygote|usap"
 
-# $bb fork from magiskd
+# fork from magiskd
 pin_proc_on_mid "magiskd"
 change_task_nice "magiskd" "19"
 }
@@ -2106,37 +2068,37 @@ change_task_nice "magiskd" "19"
 ##############################
 
 disable_debuggers(){
-for i in $($bb find /sys/ -name log_level*); do
+for i in $(find /sys/ -name log_level*); do
 write "${i}" "1"
 done
-for i in $($bb find /sys/ -name pm_qos_enable); do
+for i in $(find /sys/ -name pm_qos_enable); do
 write "${i}" "1"
 done
-for i in $($bb find /sys/ -name debug_mask); do
+for i in $(find /sys/ -name debug_mask); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name debug_level); do
+for i in $(find /sys/ -name debug_level); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name *log_ue*); do
+for i in $(find /sys/ -name *log_ue*); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name *log_ce*); do
+for i in $(find /sys/ -name *log_ce*); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name edac_mc_log*); do
+for i in $(find /sys/ -name edac_mc_log*); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name enable_event_log); do
+for i in $(find /sys/ -name enable_event_log); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name log_ecn_error); do
+for i in $(find /sys/ -name log_ecn_error); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name sec_log*); do
+for i in $(find /sys/ -name sec_log*); do
 write "${i}" "0"
 done
-for i in $($bb find /sys/ -name snapshot_crashdumper); do
+for i in $(find /sys/ -name snapshot_crashdumper); do
 write "${i}" "0"
 done
 }
@@ -2169,7 +2131,7 @@ stop oneplus_brain_service 2>/dev/null
 }
 
 disable_sysctl(){
-[ -e "/system/etc/sysctl.conf" ] && $bb mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
+[ -e "/system/etc/sysctl.conf" ] && mv -f "/system/etc/sysctl.conf" "/system/etc/sysctl.conf.bak"
 }
 
 mmc_crc(){
@@ -2214,34 +2176,34 @@ write "${fs}inotify/max_user_instances" "1024"
 }
 
 x_hwui(){
-if [ "$TOTAL_RAM" -lt "3072" ]; then
-$resetprop hwui.use_gpu_pixel_buffers false
-$resetprop debug.hwui.use_buffer_age false
-$resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100 / 2))
-$resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100 / 2))
-$resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100 / 2))
-$resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100 / 2))
-$resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100 / 2))
-$resetprop ro.hwui.texture_cache_flushrate 0.3
-$resetprop ro.hwui.gradient_cache_size 1
-$resetprop ro.hwui.text_small_cache_width 1024
-$resetprop ro.hwui.text_small_cache_height 1024
-$resetprop ro.hwui.text_large_cache_width 2048
-$resetprop ro.hwui.text_large_cache_height 1024
+if [ "$total_ram" -lt "3072" ]; then
+resetprop hwui.use_gpu_pixel_buffers false
+resetprop debug.hwui.use_buffer_age false
+resetprop ro.hwui.texture_cache_size $((total_ram * 10 / 100 / 2))
+resetprop ro.hwui.layer_cache_size $((total_ram * 5 / 100 / 2))
+resetprop ro.hwui.path_cache_size $((total_ram * 2 / 100 / 2))
+resetprop ro.hwui.r_buffer_cache_size $((total_ram / 100 / 2))
+resetprop ro.hwui.drop_shadow_cache_size $((total_ram / 100 / 2))
+resetprop ro.hwui.texture_cache_flushrate 0.3
+resetprop ro.hwui.gradient_cache_size 1
+resetprop ro.hwui.text_small_cache_width 1024
+resetprop ro.hwui.text_small_cache_height 1024
+resetprop ro.hwui.text_large_cache_width 2048
+resetprop ro.hwui.text_large_cache_height 1024
 else
-$resetprop hwui.use_gpu_pixel_buffers false
-$resetprop debug.hwui.use_buffer_age false
-$resetprop ro.hwui.texture_cache_size $((TOTAL_RAM * 10 / 100))
-$resetprop ro.hwui.layer_cache_size $((TOTAL_RAM * 5 / 100))
-$resetprop ro.hwui.path_cache_size $((TOTAL_RAM * 2 / 100))
-$resetprop ro.hwui.r_buffer_cache_size $((TOTAL_RAM / 100))
-$resetprop ro.hwui.drop_shadow_cache_size $((TOTAL_RAM / 100))
-$resetprop ro.hwui.texture_cache_flushrate 0.3
-$resetprop ro.hwui.gradient_cache_size 1
-$resetprop ro.hwui.text_small_cache_width 1024
-$resetprop ro.hwui.text_small_cache_height 1024
-$resetprop ro.hwui.text_large_cache_width 2048
-$resetprop ro.hwui.text_large_cache_height 1024
+resetprop hwui.use_gpu_pixel_buffers false
+resetprop debug.hwui.use_buffer_age false
+resetprop ro.hwui.texture_cache_size $((total_ram * 10 / 100))
+resetprop ro.hwui.layer_cache_size $((total_ram * 5 / 100))
+resetprop ro.hwui.path_cache_size $((total_ram * 2 / 100))
+resetprop ro.hwui.r_buffer_cache_size $((total_ram / 100))
+resetprop ro.hwui.drop_shadow_cache_size $((total_ram / 100))
+resetprop ro.hwui.texture_cache_flushrate 0.3
+resetprop ro.hwui.gradient_cache_size 1
+resetprop ro.hwui.text_small_cache_width 1024
+resetprop ro.hwui.text_small_cache_height 1024
+resetprop ro.hwui.text_large_cache_width 2048
+resetprop ro.hwui.text_large_cache_height 1024
 fi
 }
 
